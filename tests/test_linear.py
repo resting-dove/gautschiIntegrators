@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse
 
 from gautschiIntegrators.one_step import ExplicitEuler, VelocityVerlet
-from gautschiIntegrators.integrate import integrate_two_step_f_sym
+from gautschiIntegrators.integrate import integrate_two_step_f_sym, integrate_two_step_216_sym
 
 
 class LinearSecondOrder(unittest.TestCase):
@@ -195,6 +195,43 @@ class LinearSecondOrder(unittest.TestCase):
     #     v0 = np.zeros_like(x0)
     #     X = np.concatenate([x0, v0])
     #     self.performTwoStepFComparison(A, X, t_end=0.1, steps=100)
+
+    def performTwoStep216Comparison(self, A, X, t_end, steps, bound=1e-3):
+        n = A.shape[0]
+        scipy_x, scipy_v = self.get_scipy_result(A, X, t_end)
+        g = lambda x: np.zeros_like(x)
+        x = integrate_two_step_216_sym(A, g, X[:n], t_end / steps, t_end, X[n:])
+        rel_x = scipy.linalg.norm(scipy_x - x) / scipy.linalg.norm(scipy_x)
+        self.assertLess(rel_x, 1e-3)
+        return rel_x
+
+    def test_two_step_216_should_integrate_SPD(self):
+        n = self.n
+        A = self.get_sym_pos_def(n=n, rng=self.rng)
+        x0 = self.get_x0(n, rng=self.rng)
+        v0 = np.zeros_like(x0)
+        X = np.concatenate([x0, v0])
+        rel_x = self.performTwoStep216Comparison(A, X, t_end=0.1, steps=100)
+        self.performTwoStep216Comparison(A, X, t_end=0.1, steps=200, bound=rel_x)
+        # With starting velocities
+        v0 = self.rng.normal(size=n) / n
+        X = np.concatenate([x0, v0])
+        rel_x = self.performTwoStep216Comparison(A, X, t_end=0.1, steps=100)
+        self.performTwoStep216Comparison(A, X, t_end=0.1, steps=200, bound=rel_x)
+
+    def test_two_step_216_should_integrate_DiagonalPD(self):
+        n = self.n
+        A = self.get_diagonal_positive_array(n=n, rng=self.rng)
+        x0 = self.get_x0(n, rng=self.rng)
+        v0 = np.zeros_like(x0)
+        X = np.concatenate([x0, v0])
+        rel_x = self.performTwoStep216Comparison(A, X, t_end=0.1, steps=100)
+        self.performTwoStep216Comparison(A, X, t_end=0.1, steps=200, bound=rel_x)
+        # With starting velocities
+        v0 = self.rng.normal(size=n) / n
+        X = np.concatenate([x0, v0])
+        rel_x = self.performTwoStep216Comparison(A, X, t_end=0.1, steps=100)
+        self.performTwoStep216Comparison(A, X, t_end=0.1, steps=200, bound=rel_x)
 
 
 if __name__ == '__main__':
