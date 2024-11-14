@@ -65,3 +65,44 @@ class ExplicitEuler:
         next_X = X + self.h * (mat @ X + G)
         nextx, next_v = next_X[:len(x)], next_X[len(x):]
         return nextx, next_v
+
+
+class OneStepF():
+    """
+       One-step trigonometric integrator for second order differential equations of the form
+           x'' = - \Omega^2 @ x + g(x).
+
+       Source: Eq. (2.2) and configuration F of Table 1 of
+           E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory Differential
+           Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
+       """
+
+    def __init__(self, h: float, *, cosm: callable, sincm: callable, msinm: callable, g: callable):
+        self.h = h
+        self.cosm = cosm  # cosm(h, A, b) = cos(h * sqrt(A)) @ b
+        self.sincm = sincm  # sincm(h, A, b) = sinc(h * sqrt(A)) @ b
+        self.msinm = msinm  # msinm(h, A, b) = sqrt(A) @ sin(h * sqrt(A)) @ b
+        self.g = g
+
+    def set_h(self, h):
+        self.h = h
+
+    def step(self, omega2: scipy.sparse.sparray, x: np.array, v: np.array):
+        gn = self.g(x)
+        cosm_xn = self.cosm(self.h, omega2, x)
+        msinm_xn = self.msinm(self.h, omega2, x)
+        sincm_vn = self.sincm(self.h, omega2, v)
+        cosm_vn = self.cosm(self.h, omega2, v)
+
+        sincm_gn = self.sincm(self.h, omega2, gn)
+        sincm2_gn = self.sincm(self.h, omega2, sincm_gn)
+        cosm_sincm_gn = self.cosm(self.h, omega2, sincm_gn)
+
+        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h ** 2 * (sincm2_gn)
+
+        gn_1 = self.g(x_1)
+        sincm_gn1 = self.sincm(self.h, omega2, gn_1)
+
+        v_1 = - msinm_xn + cosm_vn + 0.5 * self.h ** 2 * (cosm_sincm_gn + sincm_gn1)
+
+        return x_1, v_1
