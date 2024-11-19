@@ -245,10 +245,13 @@ class NonLinearSecondOrder(unittest.TestCase):
         n = A.shape[0]
         g = self.get_g(X[:n])
         scipy_x, scipy_v = self.get_scipy_result(A, X, g, t_end)
-        x = integrate_one_step_f_sym(A, g, X[:n], t_end / steps, t_end, X[n:])
+        x, v = integrate_one_step_f_sym(A, g, X[:n], t_end / steps, t_end, X[n:])
         rel_x = scipy.linalg.norm(scipy_x - x) / scipy.linalg.norm(scipy_x)
         with self.subTest():
             self.assertLess(rel_x, bound)
+        rel_v = scipy.linalg.norm(scipy_v - v) / scipy.linalg.norm(scipy_v)
+        with self.subTest(f"{steps} steps: v"):
+            self.assertLess(rel_v, bound)
         return rel_x
 
     def test_one_step_F_should_integrate_SPD(self):

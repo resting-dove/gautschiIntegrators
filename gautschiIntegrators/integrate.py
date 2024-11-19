@@ -144,7 +144,7 @@ def integrate_one_step_f_sym(omega2: scipy.sparse.sparray, g: callable, x0: np.a
         integrator.set_h(h)
         x, v = integrator.step(omega2, x, v)
         t -= h
-    return x
+    return x, v
 
 
 def get_scipy_result(A, X, g, t_end):
