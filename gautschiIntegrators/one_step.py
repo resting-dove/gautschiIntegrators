@@ -103,6 +103,6 @@ class OneStepF():
         gn_1 = self.g(x_1)
         sincm_gn1 = self.sincm(self.h, omega2, gn_1)
 
-        v_1 = - msinm_xn + cosm_vn + 0.5 * self.h ** 2 * (cosm_sincm_gn + sincm_gn1)
+        v_1 = - msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
 
         return x_1, v_1
