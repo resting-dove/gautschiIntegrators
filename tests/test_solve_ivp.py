@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import numpy as np
@@ -8,7 +9,7 @@ from gautschiIntegrators.one_step import ExplicitEuler, VelocityVerlet
 from gautschiIntegrators.integrate import solve_ivp
 
 
-class LinearODE(unittest.TestCase):
+class Ode(unittest.TestCase):
     def get_matrix(self):
         raise NotImplemented
 
@@ -22,37 +23,59 @@ class LinearODE(unittest.TestCase):
         self.x0 = self.rng.random(self.n)
         self.t_end = 0.1
         self.x_true = self.get_scipy_result()
+
         self.v0 = self.rng.normal(0, 1, self.n)
         self.x_true2 = self.get_scipy_result(self.v0)
 
-    def get_scipy_result(self, v0=None):
+        self.g = self.get_g(self.x0)
+        self.x_true3 = self.get_scipy_result(self.v0, self.g)
+
+    def get_scipy_result(self, v0=None, g=None):
         if v0 is None:
             v0 = 0 * self.x0
+        if g is None:
+            g = lambda x: 0
         X = np.concatenate([self.x0, v0])
 
         def deriv(t, y):
-            return np.concatenate((y[self.n:], -1 * self.A @ y[:self.n]))
+            return np.concatenate((y[self.n:], -1 * self.A @ y[:self.n] + g(y[:self.n])))
 
         scipy_result = scipy.integrate.solve_ivp(deriv, [0, self.t_end], X)
         return scipy_result["y"][:self.n, -1]
 
-    def gautschiEvaluation(self, methodName):
-        res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, None, methodName, cosm=sym_cosm_sqrt,
-                        sincm=sym_sincm_sqrt)
-        self.assertTrue(np.isclose(res["t"], self.t_end))
-        self.assertTrue(res["success"])
-        e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-        self.assertTrue(np.all(e < 5))
+    def get_g(self, x0):
+        x0 = copy.deepcopy(x0)
 
-        with self.subTest("with starting velocities"):
+        def g(x):
+            return (x - x0) ** 2
+
+        return g
+
+    def gautschiEvaluation(self, methodName):
+        with self.subTest("Linear ODE"):
+            res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, None, methodName, cosm=sym_cosm_sqrt,
+                            sincm=sym_sincm_sqrt)
+            self.assertTrue(np.isclose(res["t"], self.t_end))
+            self.assertTrue(res["success"])
+            e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
+
+        with self.subTest("Linear ODE with starting velocities"):
             res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, self.v0, methodName,
                             cosm=sym_cosm_sqrt,
                             sincm=sym_sincm_sqrt)
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
+        with self.subTest("Nonlinear Diff Eq"):
+            res = solve_ivp(self.A, self.g, self.t_end / 200, self.t_end, self.x0, self.v0, methodName,
+                            cosm=sym_cosm_sqrt,
+                            sincm=sym_sincm_sqrt)
+            e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
 
-class SymmetricSparseArray(LinearODE):
+
+class SymmetricSparseArray(Ode):
     def get_matrix(self):
         A = self.rng.random((self.n, self.n))
         A = A + A.transpose()
@@ -81,7 +104,7 @@ class SymmetricSparseArray(LinearODE):
             self.assertTrue(np.all(e < 5))
 
 
-class PositiveDiagonal(LinearODE):
+class PositiveDiagonal(Ode):
     def get_matrix(self):
         self.A = scipy.sparse.spdiags(self.rng.random(self.n), 0, self.n, self.n)
 
@@ -103,7 +126,7 @@ class PositiveDiagonal(LinearODE):
         self.assertTrue(np.all(e < 5))
 
 
-class SymmetricPositiveDefinite(LinearODE):
+class SymmetricPositiveDefinite(Ode):
     def get_matrix(self):
         L = np.tril(self.rng.uniform(50, 51, (self.n, self.n)))
         A = L @ L.T
