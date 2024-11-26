@@ -4,12 +4,13 @@ import unittest
 import numpy as np
 import scipy.sparse
 
-from gautschiIntegrators.matrix_functions import sym_cosm_sqrt, sym_sincm_sqrt
+from gautschiIntegrators.matrix_functions import WkmEvaluator, SymDiagonalizationEvaluator, \
+    TridiagDiagonalizationEvaluator, DenseWkmEvaluator
 from gautschiIntegrators.one_step import ExplicitEuler, VelocityVerlet
 from gautschiIntegrators.integrate import solve_ivp
 
 
-class Ode(unittest.TestCase):
+class Ivp(unittest.TestCase):
     def get_matrix(self):
         raise NotImplemented
 
@@ -51,10 +52,10 @@ class Ode(unittest.TestCase):
 
         return g
 
-    def gautschiEvaluation(self, methodName):
+    def gautschiEvaluation(self, methodName, evaluator=None):
         with self.subTest("Linear ODE"):
-            res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, None, methodName, cosm=sym_cosm_sqrt,
-                            sincm=sym_sincm_sqrt)
+            res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, None, methodName,
+                            evaluator=evaluator)
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
@@ -62,92 +63,137 @@ class Ode(unittest.TestCase):
 
         with self.subTest("Linear ODE with starting velocities"):
             res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, self.v0, methodName,
-                            cosm=sym_cosm_sqrt,
-                            sincm=sym_sincm_sqrt)
+                            evaluator=evaluator)
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
         with self.subTest("Nonlinear Diff Eq"):
             res = solve_ivp(self.A, self.g, self.t_end / 200, self.t_end, self.x0, self.v0, methodName,
-                            cosm=sym_cosm_sqrt,
-                            sincm=sym_sincm_sqrt)
+                            evaluator=evaluator)
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
 
-class SymmetricSparseArray(Ode):
+class SymmetricSparseArray(Ivp):
     def get_matrix(self):
         A = self.rng.random((self.n, self.n))
         A = A + A.transpose()
         self.A = scipy.sparse.csr_array(A)
 
-    # def test_OneStepF(self):
-    #     res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, None, "OneStepF", cosm=sym_cosm_sqrt,
-    #                     sincm=sym_sincm_sqrt)
-    #     self.assertTrue(np.isclose(res["t"], self.t_end))
-    #     self.assertTrue(res["success"])
-    #     e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-    #     self.assertTrue(np.all(e < 5))
+    def test_OneStepF(self):
+        self.gautschiEvaluation("OneStepF", WkmEvaluator())
+
+    def test_TwoStepF(self):
+        self.gautschiEvaluation("TwoStepF", DenseWkmEvaluator())
+
+    def test_TwoStep216(self):
+        self.gautschiEvaluation("TwoStep216", DenseWkmEvaluator())
 
     def test_ExplicitEuler(self):
-        res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler", cosm=sym_cosm_sqrt,
-                        sincm=sym_sincm_sqrt)
-        self.assertTrue(np.isclose(res["t"], self.t_end))
-        self.assertTrue(res["success"])
-        e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-        self.assertTrue(np.all(e < 5))
+        with self.subTest("Linear ODE"):
+            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler")
+            self.assertTrue(np.isclose(res["t"], self.t_end))
+            self.assertTrue(res["success"])
+            e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
         with self.subTest("With starting velocities"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler",
-                            cosm=sym_cosm_sqrt,
-                            sincm=sym_sincm_sqrt)
+            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
+        with self.subTest("Nonlinear Diff Eq"):
+            res = solve_ivp(self.A, self.g, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
 
-class PositiveDiagonal(Ode):
+class PositiveDiagonal(Ivp):
     def get_matrix(self):
-        self.A = scipy.sparse.spdiags(self.rng.random(self.n), 0, self.n, self.n)
+        self.A = scipy.sparse.diags_array(self.rng.random(self.n), offsets=0, shape=(self.n, self.n))
 
-    def test_OneStepF(self):
-        self.gautschiEvaluation("OneStepF")
+    def test_OneStepF_SymDiagonalization(self):
+        self.gautschiEvaluation("OneStepF", SymDiagonalizationEvaluator())
 
-    def test_TwoStepF(self):
-        self.gautschiEvaluation("TwoStepF")
+    def test_OneStepF_SymTriDiagDiagonalization(self):
+        self.gautschiEvaluation("OneStepF", TridiagDiagonalizationEvaluator())
 
-    def test_TwoStep216(self):
-        self.gautschiEvaluation("TwoStep216")
+    def test_OneStepF_Wkm(self):
+        self.gautschiEvaluation("OneStepF", DenseWkmEvaluator())
+
+    def test_TwoStepF_SymDiagonalization(self):
+        self.gautschiEvaluation("TwoStepF", SymDiagonalizationEvaluator())
+
+    def test_TwoStepF_SymTriDiagDiagonalization(self):
+        self.gautschiEvaluation("TwoStepF", TridiagDiagonalizationEvaluator())
+
+    def test_TwoStepF_Wkm(self):
+        self.gautschiEvaluation("TwoStepF", DenseWkmEvaluator())
+
+    def test_TwoStep216_SymDiagonalization(self):
+        self.gautschiEvaluation("TwoStep216", SymDiagonalizationEvaluator())
+
+    def test_TwoStep216_SymTriDiagDiagonalization(self):
+        self.gautschiEvaluation("TwoStep216", TridiagDiagonalizationEvaluator())
+
+    def test_TwoStep216_Wkm(self):
+        self.gautschiEvaluation("TwoStep216", DenseWkmEvaluator())
 
     def test_ExplicitEuler(self):
-        res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler", cosm=sym_cosm_sqrt,
-                        sincm=sym_sincm_sqrt)
-        self.assertTrue(np.isclose(res["t"], self.t_end))
-        self.assertTrue(res["success"])
-        e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-        self.assertTrue(np.all(e < 5))
+        with self.subTest("Linear ODE"):
+            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler")
+            self.assertTrue(np.isclose(res["t"], self.t_end))
+            self.assertTrue(res["success"])
+            e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
+        with self.subTest("With starting velocities"):
+            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
+        with self.subTest("Nonlinear Diff Eq"):
+            res = solve_ivp(self.A, self.g, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
 
 
-class SymmetricPositiveDefinite(Ode):
+class SymmetricPositiveDefinite(Ivp):
     def get_matrix(self):
         L = np.tril(self.rng.uniform(50, 51, (self.n, self.n)))
         A = L @ L.T
         self.A = scipy.sparse.csr_array(A / 50 ** 3)
 
-    def test_OneStepF(self):
-        self.gautschiEvaluation("OneStepF")
+    def test_OneStepF_SymDiagonalization(self):
+        self.gautschiEvaluation("OneStepF", SymDiagonalizationEvaluator())
 
-    def test_TwoStepF(self):
-        self.gautschiEvaluation("TwoStepF")
 
-    def test_TwoStep216(self):
-        self.gautschiEvaluation("TwoStep216")
+    def test_OneStepF_Wkm(self):
+        self.gautschiEvaluation("OneStepF", DenseWkmEvaluator())
+
+    def test_TwoStepF_SymDiagonalization(self):
+        self.gautschiEvaluation("TwoStepF", SymDiagonalizationEvaluator())
+
+    def test_TwoStepF_Wkm(self):
+        self.gautschiEvaluation("TwoStepF", DenseWkmEvaluator())
+
+    def test_TwoStep216_SymDiagonalization(self):
+        self.gautschiEvaluation("TwoStep216", SymDiagonalizationEvaluator())
+
+    def test_TwoStep216_Wkm(self):
+        self.gautschiEvaluation("TwoStep216", DenseWkmEvaluator())
 
     def test_ExplicitEuler(self):
-        res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler", cosm=sym_cosm_sqrt,
-                        sincm=sym_sincm_sqrt)
-        self.assertTrue(np.isclose(res["t"], self.t_end))
-        self.assertTrue(res["success"])
-        e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-        self.assertTrue(np.all(e < 5))
+        with self.subTest("Linear ODE"):
+            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler")
+            self.assertTrue(np.isclose(res["t"], self.t_end))
+            self.assertTrue(res["success"])
+            e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
+        with self.subTest("With starting velocities"):
+            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
+        with self.subTest("Nonlinear Diff Eq"):
+            res = solve_ivp(self.A, self.g, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
+            self.assertTrue(np.all(e < 5))
 
 
 def compute_error(x, x_true, rtol, atol):

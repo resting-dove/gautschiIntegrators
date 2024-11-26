@@ -1,7 +1,6 @@
 import inspect
 
 import numpy as np
-import scipy.sparse
 
 from gautschiIntegrators.base import Solver
 from gautschiIntegrators.one_step import OneStepF, ExplicitEuler
@@ -53,6 +52,6 @@ def solve_ivp(A, g, h: float, t_end: float, x0: np.array, v0: np.array, method: 
         "x": x,
         "v": solver.v,
         "iterations": solver.iterations,
-        "n_matvecs": solver.n_matvecs,
+        "work": solver.work,
         "status": status, "message": message, "success": status >= 0
     }

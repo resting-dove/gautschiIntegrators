@@ -3,6 +3,27 @@ from collections import defaultdict
 import numpy as np
 
 
+class WorkLog:
+    def __init__(self):
+        self.store = defaultdict(lambda: 0)
+
+    def __getitem__(self, item):
+        return self.store[item]
+
+    def __setitem__(self, key, value):
+        self.store[key] = value
+
+    def add(self, d: dict):
+        for k, v in d.items():
+            self[k] += v
+
+    def __repr__(self):
+        s = "{"
+        for k, v in self.store.items():
+            s += f"'{k}': {v}, "
+        return s + "}"
+
+
 class Solver:
     """Base Class for integrators for second order differential equations of the form
            x'' = - \Omega^2 @ x + g(x).
@@ -28,7 +49,7 @@ class Solver:
         self.n = self.x.size
 
         self.iterations = 0
-        self.n_matvecs = defaultdict(lambda: 0)
+        self.work = WorkLog()
 
     def step(self, omega2):
         """Perform one integration step.

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from gautschiIntegrators.base import Solver
+from gautschiIntegrators.matrix_functions import MatrixFunctionEvaluator, WkmEvaluator
 
 
 class VelocityVerlet:
@@ -67,7 +68,7 @@ class ExplicitEuler(Solver):
         self.x, self.v = next_X[:len(self.x)], next_X[len(self.x):]
         self.t += self.h
         self.iterations += 1
-        self.n_matvecs[2 * self.n] += 1
+        self.work[2 * self.n] += 1
         return True, None
 
 
@@ -81,38 +82,35 @@ class OneStepF(Solver):
            Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
        """
 
-    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable, *args, cosm: callable,
-                 sincm: callable,
-                 msinm=None, **kwargs):
+    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
+                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(), **kwargs):
         super().__init__(h, t_end, x0, v0, g)
-        self.cosm = cosm  # cosm(h, A, b) = cos(h * sqrt(A)) @ b
-        self.sincm = sincm  # sincm(h, A, b) = sinc(h * sqrt(A)) @ b
-        # sqrt(A) @ sin(h * sqrt(A)) @ b = h * A @ sinc(h * sqrt(A))
-        if msinm is None:
-            self.msinm = lambda h, A, x: h * A @ self.sincm(h, A, x)
-        else:
-            self.msinm = msinm
+        self.evaluator = evaluator
 
     def _step_impl(self, omega2: scipy.sparse.sparray):
         gn = self.g(self.x)
-        cosm_xn = self.cosm(self.h, omega2, self.x)
-        msinm_xn = self.msinm(self.h, omega2, self.x)
-        sincm_vn = self.sincm(self.h, omega2, self.v)
-        cosm_vn = self.cosm(self.h, omega2, self.v)
+        cosm_xn = self.evaluator.wave_kernel_c(self.h, omega2, self.x)
+        msinm_xn = self.evaluator.wave_kernel_msinm(self.h, omega2, self.x)
+        self.work.add(self.evaluator.reset())
 
-        sincm_gn = self.sincm(self.h, omega2, gn)
-        sincm2_gn = self.sincm(self.h, omega2, sincm_gn)
-        cosm_sincm_gn = self.cosm(self.h, omega2, sincm_gn)
+        sincm_vn, cosm_vn = self.evaluator.wave_kernels(self.h, omega2, self.v)
+        self.work.add(self.evaluator.reset())
+
+        sincm_gn = self.evaluator.wave_kernel_s(self.h, omega2, gn)
+        self.work.add(self.evaluator.reset())
+
+        cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
+        self.work.add(self.evaluator.reset())
 
         x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h ** 2 * (sincm2_gn)
 
         gn_1 = self.g(x_1)
-        sincm_gn1 = self.sincm(self.h, omega2, gn_1)
+        sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
+        self.work.add(self.evaluator.reset())
 
         v_1 = - msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
 
         self.x, self.v = x_1, v_1
         self.t += self.h
         self.iterations += 1
-        self.n_matvecs[self.n] += np.inf  # TODO: Make the function evaluator interface return this
         return True, None
