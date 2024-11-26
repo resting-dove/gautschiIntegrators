@@ -71,7 +71,7 @@ class Solver:
             message = None
             self.status = 'finished'
         else:
-            t = self.t
+
             success, message = self._step_impl(omega2)
 
             if not success:

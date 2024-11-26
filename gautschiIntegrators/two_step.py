@@ -22,6 +22,8 @@ class TwoStepIntegratorF(Solver):
         self.evaluator = evaluator
 
     def first_step_impl(self, omega2: scipy.sparse.spmatrix):
+        if self.h > self.t_end:
+            self.h = self.t_end
         x, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
         self.prev_x = self.x
         self.x = x
@@ -33,6 +35,12 @@ class TwoStepIntegratorF(Solver):
     def _step_impl(self, omega2: scipy.sparse.sparray):
         if self.t == 0:
             return self.first_step_impl(omega2)
+        self.t += self.h
+        if self.t >= self.t_end:
+            overshoot = self.t - self.t_end
+            self.t -= overshoot
+            self.h -= overshoot
+
         g_x = self.g(self.x)
         cosm = self.evaluator.wave_kernel_c(self.h, omega2, self.x)
         self.work.add(self.evaluator.reset())
@@ -46,7 +54,6 @@ class TwoStepIntegratorF(Solver):
         res = 2 * cosm - self.prev_x + self.h ** 2 * sincm2
         self.prev_x = self.x
         self.x = res
-        self.t += self.h
         self.iterations += 1
         return True, None
 
@@ -69,6 +76,8 @@ class TwoStepIntegrator2_16(Solver):
         self.evaluator = evaluator
 
     def first_step_impl(self, omega2: scipy.sparse.spmatrix):
+        if self.h > self.t_end:
+            self.h = self.t_end
         x, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
         self.prev_x = self.x
         self.x = x
@@ -80,6 +89,12 @@ class TwoStepIntegrator2_16(Solver):
     def _step_impl(self, omega2: scipy.sparse.sparray):
         if self.t == 0:
             return self.first_step_impl(omega2)
+        self.t += self.h
+        if self.t >= self.t_end:
+            overshoot = self.t - self.t_end
+            self.t -= overshoot
+            self.h -= overshoot
+
         g_x = self.g(self.x)
         cosm_xn, sincm_xn = self.evaluator.wave_kernels(self.h, omega2, self.x)
         self.work.add(self.evaluator.reset())
@@ -96,7 +111,6 @@ class TwoStepIntegrator2_16(Solver):
         res = 2 * cosm_xn - self.prev_x + self.h ** 2 * (sincm2_gn + sincm_gn + sincm_g_sincm_xn)
         self.prev_x = self.x
         self.x = res
-        self.t += self.h
         self.iterations += 1
         return True, None
 

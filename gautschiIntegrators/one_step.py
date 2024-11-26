@@ -61,12 +61,17 @@ class ExplicitEuler(Solver):
         super().__init__(h, t_end, x0, v0, g)
 
     def _step_impl(self, omega2: scipy.sparse.sparray) -> (np.array, np.array):
+        self.t += self.h
+        if self.t >= self.t_end:
+            overshoot = self.t - self.t_end
+            self.t -= overshoot
+            self.h -= overshoot
+
         X = np.concatenate([self.x, self.v])
         mat = scipy.sparse.block_array([[None, scipy.sparse.eye_array(*self.v.shape)], [-1 * omega2, None]])
         G = np.concatenate([np.zeros_like(self.x), self.g(self.x)])
         next_X = X + self.h * (mat @ X + G)
         self.x, self.v = next_X[:len(self.x)], next_X[len(self.x):]
-        self.t += self.h
         self.iterations += 1
         self.work[2 * self.n] += 1
         return True, None
@@ -88,6 +93,12 @@ class OneStepF(Solver):
         self.evaluator = evaluator
 
     def _step_impl(self, omega2: scipy.sparse.sparray):
+        self.t += self.h
+        if self.t >= self.t_end:
+            overshoot = self.t - self.t_end
+            self.t -= overshoot
+            self.h -= overshoot
+
         gn = self.g(self.x)
         cosm_xn = self.evaluator.wave_kernel_c(self.h, omega2, self.x)
         msinm_xn = self.evaluator.wave_kernel_msinm(self.h, omega2, self.x)
@@ -111,6 +122,5 @@ class OneStepF(Solver):
         v_1 = - msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
 
         self.x, self.v = x_1, v_1
-        self.t += self.h
         self.iterations += 1
         return True, None

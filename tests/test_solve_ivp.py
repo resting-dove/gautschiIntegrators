@@ -22,7 +22,8 @@ class Ivp(unittest.TestCase):
         self.rtol = 1e-5
         self.atol = 1e-5
         self.x0 = self.rng.random(self.n)
-        self.t_end = 0.1
+        self.t_end = 0.13
+        self.h = 0.1 / 200
         self.x_true = self.get_scipy_result()
 
         self.v0 = self.rng.normal(0, 1, self.n)
@@ -54,7 +55,7 @@ class Ivp(unittest.TestCase):
 
     def gautschiEvaluation(self, methodName, evaluator=None):
         with self.subTest("Linear ODE"):
-            res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, None, methodName,
+            res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, None, methodName,
                             evaluator=evaluator)
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
@@ -62,13 +63,13 @@ class Ivp(unittest.TestCase):
             self.assertTrue(np.all(e < 5))
 
         with self.subTest("Linear ODE with starting velocities"):
-            res = solve_ivp(self.A, None, self.t_end / 200, self.t_end, self.x0, self.v0, methodName,
+            res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, self.v0, methodName,
                             evaluator=evaluator)
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
         with self.subTest("Nonlinear Diff Eq"):
-            res = solve_ivp(self.A, self.g, self.t_end / 200, self.t_end, self.x0, self.v0, methodName,
+            res = solve_ivp(self.A, self.g, self.h, self.t_end, self.x0, self.v0, methodName,
                             evaluator=evaluator)
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
@@ -91,17 +92,17 @@ class SymmetricSparseArray(Ivp):
 
     def test_ExplicitEuler(self):
         with self.subTest("Linear ODE"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler")
+            res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, None, "ExplicitEuler")
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
         with self.subTest("With starting velocities"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
         with self.subTest("Nonlinear Diff Eq"):
-            res = solve_ivp(self.A, self.g, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
@@ -139,17 +140,17 @@ class PositiveDiagonal(Ivp):
 
     def test_ExplicitEuler(self):
         with self.subTest("Linear ODE"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler")
+            res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, None, "ExplicitEuler")
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
         with self.subTest("With starting velocities"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
         with self.subTest("Nonlinear Diff Eq"):
-            res = solve_ivp(self.A, self.g, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
@@ -162,7 +163,6 @@ class SymmetricPositiveDefinite(Ivp):
 
     def test_OneStepF_SymDiagonalization(self):
         self.gautschiEvaluation("OneStepF", SymDiagonalizationEvaluator())
-
 
     def test_OneStepF_Wkm(self):
         self.gautschiEvaluation("OneStepF", DenseWkmEvaluator())
@@ -181,17 +181,17 @@ class SymmetricPositiveDefinite(Ivp):
 
     def test_ExplicitEuler(self):
         with self.subTest("Linear ODE"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, None, "ExplicitEuler")
+            res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, None, "ExplicitEuler")
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
         with self.subTest("With starting velocities"):
-            res = solve_ivp(self.A, None, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
         with self.subTest("Nonlinear Diff Eq"):
-            res = solve_ivp(self.A, self.g, self.t_end / 1000, self.t_end, self.x0, self.v0, "ExplicitEuler")
+            res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
 
