@@ -45,7 +45,7 @@ class SymDiagonalizationEvaluator(MatrixFunctionEvaluator):
         if self.w is None:
             self.w, self.v = scipy.linalg.eigh(omega2.todense())
             if min(self.w) < 0:
-                self.w += 0j
+                self.w = self.w + 0j
             self.diagonalizations += 1
             self.n = omega2.shape[0]
 
@@ -91,7 +91,7 @@ class TridiagDiagonalizationEvaluator(SymDiagonalizationEvaluator):
         if self.w is None:
             self.w, self.v = scipy.linalg.eigh_tridiagonal(omega2.diagonal(0), omega2.diagonal(-1))
             if min(self.w) < 0:
-                self.w += 0j
+                self.w = self.w + 0j
 
 
 class WkmEvaluator(MatrixFunctionEvaluator):

@@ -4,10 +4,10 @@ import unittest
 import numpy as np
 import scipy.sparse
 
+from gautschiIntegrators.integrate import solve_ivp
 from gautschiIntegrators.matrix_functions import WkmEvaluator, SymDiagonalizationEvaluator, \
     TridiagDiagonalizationEvaluator, DenseWkmEvaluator
-from gautschiIntegrators.one_step import ExplicitEuler, VelocityVerlet
-from gautschiIntegrators.integrate import solve_ivp
+from tests.utils import compute_error
 
 
 class Ivp(unittest.TestCase):
@@ -194,11 +194,6 @@ class SymmetricPositiveDefinite(Ivp):
             res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertTrue(np.all(e < 5))
-
-
-def compute_error(x, x_true, rtol, atol):
-    e = (x - x_true) / (atol + rtol * np.abs(x_true))
-    return np.linalg.norm(e, axis=0) / np.sqrt(e.shape[0])
 
 
 if __name__ == '__main__':
