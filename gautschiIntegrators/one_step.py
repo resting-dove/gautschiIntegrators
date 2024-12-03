@@ -124,3 +124,61 @@ class OneStepF(Solver):
         self.x, self.v = x_1, v_1
         self.iterations += 1
         return True, None
+
+
+class OneStepGS99(Solver):
+    """
+       One-step trigonometric integrator for second order differential equations of the form
+           x'' = - \Omega^2 @ x + g(x).
+
+       Source:
+            Originally proposed by
+                B. García-Archilla, J. M. Sanz-Serna, and R. D. Skeel, “Long-Time-Step Methods for Oscillatory
+                Differential Equations,” SIAM J. Sci. Comput., vol. 20, no. 3, pp. 930–963, Oct. 1998,
+                doi: 10.1137/S1064827596313851.
+            Also found in Eq. (2.2) and configuration E of Table 1 of
+                E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory
+                Differential Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000,
+                doi: 10.1137/S0036142999353594.
+       """
+
+    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
+                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(), **kwargs):
+        super().__init__(h, t_end, x0, v0, g)
+        self.evaluator = evaluator
+
+    def _step_impl(self, omega2: scipy.sparse.sparray):
+        self.t += self.h
+        if self.t >= self.t_end:
+            overshoot = self.t - self.t_end
+            self.t -= overshoot
+            self.h -= overshoot
+
+        cosm_xn, sincm_xn = self.evaluator.wave_kernels(self.h, omega2, self.x)
+        msinm_xn = self.evaluator.wave_kernel_msinm(self.h, omega2, self.x)
+        self.work.add(self.evaluator.reset())
+
+        gn = self.g(sincm_xn)
+
+        sincm_vn, cosm_vn = self.evaluator.wave_kernels(self.h, omega2, self.v)
+        self.work.add(self.evaluator.reset())
+
+        sincm_gn = self.evaluator.wave_kernel_s(self.h, omega2, gn)
+        self.work.add(self.evaluator.reset())
+
+        cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
+        self.work.add(self.evaluator.reset())
+
+        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h ** 2 * (sincm2_gn)
+
+        sincm_x1 = self.evaluator.wave_kernel_s(self.h, omega2, x_1)
+        self.work.add(self.evaluator.reset())
+        gn_1 = self.g(sincm_x1)
+        sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
+        self.work.add(self.evaluator.reset())
+
+        v_1 = -1 * msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
+
+        self.x, self.v = x_1, v_1
+        self.iterations += 1
+        return True, None

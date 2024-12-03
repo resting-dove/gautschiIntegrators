@@ -19,17 +19,24 @@ class TwoStepIntegratorF(Solver):
                  *args, **kwargs):
         super().__init__(h, t_end, x0, v0, g)
         self.prev_x = None
+        self.prev_v = None
+        self.prev_g_x = None
+        self.curr_g_x = None
         self.evaluator = evaluator
 
     def first_step_impl(self, omega2: scipy.sparse.spmatrix):
         if self.h > self.t_end:
             self.h = self.t_end
-        x, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
+        x, v, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
         self.prev_x = self.x
+        self.prev_v = self.v
         self.x = x
+        self.v = v
         self.t += self.h
         self.iterations += 1
         self.work[self.n] += n_matvecs
+        self.prev_g_x = self.g(self.prev_x)
+        self.curr_g_x = self.g(self.x)
         return True, None
 
     def _step_impl(self, omega2: scipy.sparse.sparray):
@@ -41,19 +48,33 @@ class TwoStepIntegratorF(Solver):
             self.t -= overshoot
             self.h -= overshoot
 
-        g_x = self.g(self.x)
+        g_x = self.curr_g_x
         cosm = self.evaluator.wave_kernel_c(self.h, omega2, self.x)
+        msinm_xn = self.evaluator.wave_kernel_msinm(self.h, omega2, self.x)
         self.work.add(self.evaluator.reset())
 
-        sincm = self.evaluator.wave_kernel_c(self.h, omega2, g_x)
+        sincm_gn = self.evaluator.wave_kernel_s(self.h, omega2, g_x)
         self.work.add(self.evaluator.reset())
 
-        sincm2 = self.evaluator.wave_kernel_s(self.h, omega2, sincm)
+        cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
         self.work.add(self.evaluator.reset())
 
-        res = 2 * cosm - self.prev_x + self.h ** 2 * sincm2
+        x_1 = 2 * cosm - self.prev_x + self.h ** 2 * sincm2_gn
+
+        gn_1 = self.g(x_1)
+        sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
+        self.work.add(self.evaluator.reset())
+        sincm_prev_g = self.evaluator.wave_kernel_s(self.h, omega2, self.prev_g_x)
+        self.work.add(self.evaluator.reset())
+
+        v_1 = self.prev_v - 2 * msinm_xn + 0.5 * self.h * (sincm_gn1 + 2 * cosm_sincm_gn + sincm_prev_g)
+
         self.prev_x = self.x
-        self.x = res
+        self.prev_v = self.v
+        self.prev_g_x = g_x
+        self.curr_g_x = gn_1
+        self.x = x_1
+        self.v = v_1
         self.iterations += 1
         return True, None
 
@@ -73,14 +94,17 @@ class TwoStepIntegrator2_16(Solver):
                  *args, **kwargs):
         super().__init__(h, t_end, x0, v0, g)
         self.prev_x = None
+        self.prev_v = None
         self.evaluator = evaluator
 
     def first_step_impl(self, omega2: scipy.sparse.spmatrix):
         if self.h > self.t_end:
             self.h = self.t_end
-        x, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
+        x, v, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
         self.prev_x = self.x
+        self.prev_v = self.v
         self.x = x
+        self.v = v
         self.t += self.h
         self.iterations += 1
         self.work[self.n] += n_matvecs
@@ -105,10 +129,11 @@ class TwoStepIntegrator2_16(Solver):
         self.work.add(self.evaluator.reset())
 
         g_sincm_xn = self.g(sincm_xn)
-        sincm_g_sincm_xn = self.evaluator.wave_kernel_s(self.h, omega2, g_sincm_xn)
+        sincm_g_minus_gsincm_xn = self.evaluator.wave_kernel_s(self.h, omega2, g_x - g_sincm_xn)
         self.work.add(self.evaluator.reset())
 
-        res = 2 * cosm_xn - self.prev_x + self.h ** 2 * (sincm2_gn + sincm_gn + sincm_g_sincm_xn)
+        res = 2 * cosm_xn - self.prev_x + self.h ** 2 * (sincm2_gn + sincm_g_minus_gsincm_xn)
+
         self.prev_x = self.x
         self.x = res
         self.iterations += 1
@@ -123,4 +148,4 @@ def get_scipy_result(A, X, g, t_end):
         return np.concatenate((y[n:], -1 * A @ y[:n] + g(y[:n])))
 
     scipy_result = scipy.integrate.solve_ivp(deriv, [0, t_end], X)
-    return scipy_result["y"][:n, -1], scipy_result["nfev"]
+    return scipy_result["y"][:n, -1], scipy_result["y"][n:, -1], scipy_result["nfev"]
