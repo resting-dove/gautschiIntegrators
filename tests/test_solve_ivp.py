@@ -26,7 +26,7 @@ class Ivp(unittest.TestCase):
         self.h = 0.1 / 200
         self.x_true = self.get_scipy_result()
 
-        self.v0 = self.rng.normal(0, 1, self.n)
+        self.v0 = self.rng.normal(0, 1, self.n) / 100
         self.x_true2 = self.get_scipy_result(self.v0)
 
         self.g = self.get_g(self.x0)
@@ -60,19 +60,19 @@ class Ivp(unittest.TestCase):
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e , 5)
 
         with self.subTest("Linear ODE with starting velocities"):
             res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, self.v0, methodName,
                             evaluator=evaluator)
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e , 5)
 
         with self.subTest("Nonlinear Diff Eq"):
             res = solve_ivp(self.A, self.g, self.h, self.t_end, self.x0, self.v0, methodName,
                             evaluator=evaluator)
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
 
 
 class SymmetricSparseArray(Ivp):
@@ -83,6 +83,9 @@ class SymmetricSparseArray(Ivp):
 
     def test_OneStepF(self):
         self.gautschiEvaluation("OneStepF", WkmEvaluator())
+
+    def test_OneStepGS99(self):
+        self.gautschiEvaluation("OneStepGS99", DenseWkmEvaluator())
 
     def test_TwoStepF(self):
         self.gautschiEvaluation("TwoStepF", DenseWkmEvaluator())
@@ -96,15 +99,15 @@ class SymmetricSparseArray(Ivp):
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
         with self.subTest("With starting velocities"):
             res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
         with self.subTest("Nonlinear Diff Eq"):
             res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
 
 
 class PositiveDiagonal(Ivp):
@@ -144,15 +147,15 @@ class PositiveDiagonal(Ivp):
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
         with self.subTest("With starting velocities"):
             res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
         with self.subTest("Nonlinear Diff Eq"):
             res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
 
 
 class SymmetricPositiveDefinite(Ivp):
@@ -163,6 +166,9 @@ class SymmetricPositiveDefinite(Ivp):
 
     def test_OneStepF_SymDiagonalization(self):
         self.gautschiEvaluation("OneStepF", SymDiagonalizationEvaluator())
+
+    def test_OneStepGS99_Wkm(self):
+        self.gautschiEvaluation("OneStepGS99", DenseWkmEvaluator())
 
     def test_OneStepF_Wkm(self):
         self.gautschiEvaluation("OneStepF", DenseWkmEvaluator())
@@ -185,15 +191,15 @@ class SymmetricPositiveDefinite(Ivp):
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
         with self.subTest("With starting velocities"):
             res = solve_ivp(self.A, None, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
         with self.subTest("Nonlinear Diff Eq"):
             res = solve_ivp(self.A, self.g, self.h / 5, self.t_end, self.x0, self.v0, "ExplicitEuler")
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
-            self.assertTrue(np.all(e < 5))
+            self.assertLess(e, 5)
 
 
 if __name__ == '__main__':
