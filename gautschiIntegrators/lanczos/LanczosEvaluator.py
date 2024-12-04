@@ -3,10 +3,10 @@ import scipy
 
 from gautschiIntegrators.base import WorkLog
 from gautschiIntegrators.lanczos.LanczosProvider import LanczosProvider
-from gautschiIntegrators.matrix_functions import MatrixFunctionEvaluator
+from pywkm.wkm import wkm
 
 
-class LanczosDiagonalizationEvaluator(MatrixFunctionEvaluator):
+class LanczosEvaluatorBase:
     def __init__(self, krylov_size, arnoldi_acc=1e-10, lanczos=LanczosProvider()):
         self.k = krylov_size
         self.arnoldi_acc = arnoldi_acc
@@ -24,6 +24,18 @@ class LanczosDiagonalizationEvaluator(MatrixFunctionEvaluator):
         else:
             self.m = self.lanczos.construct(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
             self.work.add({omega2.shape[0]: self.m})
+
+    def reset(self):
+        self.lanczos.reset()
+        self.n = 0
+        self.m = 0
+        self.beta = None
+        ret = self.work.store
+        self.work = WorkLog()
+        return ret
+
+
+class LanczosDiagonalizationEvaluator(LanczosEvaluatorBase):
 
     def calculate_fTe1(self, f):
         if self.beta != 0:
@@ -72,9 +84,57 @@ class LanczosDiagonalizationEvaluator(MatrixFunctionEvaluator):
         self.work.add({self.lanczos.V.shape[0]: 2})
         return self.beta * self.lanczos.V @ sincT
 
+
+class LanczosWkmEvaluator(LanczosEvaluatorBase):
+    def __init__(self, krylov_size, arnoldi_acc=1e-10, lanczos=LanczosProvider()):
+        super().__init__(krylov_size, arnoldi_acc, lanczos)
+        self.wkms = 0
+
+    def wave_kernels(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        self.C, self.S = wkm(-1 * self.lanczos.T, return_sinhc=True)
+        self.wkms += 1
+        self.n = self.C.shape[0]
+        cosT = self.C[:, 0]
+        sincT = self.S[:, 0]
+        self.work.add({self.lanczos.V.shape[0]: 2})
+        return self.beta * self.lanczos.V @ cosT, self.beta * self.lanczos.V @ sincT
+
+    def wave_kernel_s(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        self.C, self.S = wkm(-1 * self.lanczos.T, return_sinhc=True)
+        self.wkms += 1
+        self.n = self.C.shape[0]
+        sincT = self.S[:, 0]
+        self.work.add({self.lanczos.V.shape[0]: 1})
+        return self.beta * self.lanczos.V @ sincT
+
+    def wave_kernel_c(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        self.C = wkm(-1 * self.lanczos.T, return_sinhc=False)
+        self.wkms += 1
+        self.n = self.C.shape[0]
+        cosT = self.C[:, 0]
+        self.work.add({self.lanczos.V.shape[0]: 1})
+        return self.beta * self.lanczos.V @ cosT
+
+    def wave_kernel_msinm(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        self.C, self.S = wkm(-1 * self.lanczos.T, return_sinhc=True)
+        self.wkms += 1
+        self.n = self.C.shape[0]
+        sincT = self.S[:, 0]
+        self.work.add({self.lanczos.V.shape[0]: 2})
+        return self.beta * h * omega2 @ (self.lanczos.V @ sincT)
+
     def reset(self):
         self.lanczos.reset()
         self.n = 0
         self.m = 0
         self.beta = None
-        return self.work.store
+        self.C, self.S = None, None
+        self.work.add({f"({self.n}, {self.n}) wkms": self.wkms})
+        ret = self.work.store
+        self.wkms = 0
+        self.work = WorkLog()
+        return ret

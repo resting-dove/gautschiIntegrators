@@ -154,10 +154,11 @@ class WkmEvaluator(MatrixFunctionEvaluator):
 
     def reset(self):
         self.C, self.S = None, None
+        ret = {f"({self.n}, {self.n}) wkms": self.wkms,  # TODO: Add this information to be returned by PyWKM
+               self.n: self.matvecs}
         self.wkms = 0
         self.matvecs = 0
-        return {f"({self.n}, {self.n}) wkms": self.wkms,  # TODO: Add this information to be returned by PyWKM
-                self.n: self.matvecs}
+        return ret
 
 
 class DenseWkmEvaluator(WkmEvaluator):
@@ -209,7 +210,8 @@ class DenseWkmEvaluator(WkmEvaluator):
 
     def reset(self):
         # self.C, self.S = None, None
+        ret = {f"({self.n}, {self.n}) wkms": self.wkms,
+               self.n: self.matvecs}
         self.wkms = 0
         self.matvecs = 0
-        return {f"({self.n}, {self.n}) wkms": self.wkms,
-                self.n: self.matvecs}
+        return ret
