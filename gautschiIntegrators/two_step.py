@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.sparse
-from gautschiIntegrators.base import Solver
-from gautschiIntegrators.matrix_functions import MatrixFunctionEvaluator, WkmEvaluator
+from .base import Solver
+from .matrix_functions import MatrixFunctionEvaluator, WkmEvaluator
 
 
 class TwoStepIntegratorF(Solver):
