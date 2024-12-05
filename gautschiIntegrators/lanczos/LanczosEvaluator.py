@@ -2,6 +2,7 @@ import numpy as np
 import scipy
 
 from gautschiIntegrators.base import WorkLog
+from gautschiIntegrators.lanczos.ArnoldiProvider import RestartedLanczosProvider
 from gautschiIntegrators.lanczos.LanczosProvider import LanczosProvider
 from pywkm.wkm import wkm
 
@@ -138,3 +139,70 @@ class LanczosWkmEvaluator(LanczosEvaluatorBase):
         self.wkms = 0
         self.work = WorkLog()
         return ret
+
+
+class RestartedLanczosWkmEvaluator:
+
+    def __init__(self, krylov_size, arnoldi_acc=1e-10, max_restarts=10):
+        self.k = krylov_size
+        self.arnoldi_acc = arnoldi_acc
+        self.rlanczos = RestartedLanczosProvider()
+        self.n = 0
+        self.m = 0
+        self.max_restarts = max_restarts
+        self.beta = None
+        self.work = WorkLog()
+        self.cosO, self.sincO = None, None
+
+    def calculate_lanczos(self, h, omega2, b):
+        if self.beta is None:
+            self.beta = scipy.linalg.norm(b)
+        if self.beta == 0:
+            self.rlanczos.construct_zero(omega2.shape[0])
+        else:
+            self.m = self.rlanczos.construct(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
+            self.work.add({omega2.shape[0]: self.m})
+
+    def reset(self):
+        self.rlanczos.reset()
+        self.n = 0
+        self.m = 0
+        self.beta = None
+        ret = self.work.store
+        self.work = WorkLog()
+        self.cosO, self.sincO = None, None
+        return ret
+
+    def wave_kernels(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        C, S = wkm(-1 * self.rlanczos.T, return_sinhc=True)
+        self.n = C.shape[0]
+        self.work.add({f"({self.n}, {self.n}) wkms": 1})
+        cosT = C[:, [0]]
+        sincT = S[:, [0]]
+        self.work.add({self.rlanczos.V.shape[0]: 2})
+        self.cosO, self.sincO = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
+        if self.beta != 0:
+            for k in range(1, self.max_restarts + 1):
+                self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
+                C, S = wkm(-1 * self.rlanczos.T, return_sinhc=True)
+                self.work.add({f"({self.rlanczos.km}, {self.rlanczos.km}) wkms": 1})
+                cosT = C[-self.rlanczos.m:, [0]]
+                sincT = S[-self.rlanczos.m:, [0]]
+                self.work.add({self.rlanczos.V.shape[0]: 2})
+                cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
+                self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate
+
+        return self.cosO.flatten(), self.sincO.flatten()
+
+    def wave_kernel_s(self, h, omega2, b):
+        return self.wave_kernels(h, omega2, b)[1]
+
+    def wave_kernel_c(self, h, omega2, b):
+        return self.wave_kernels(h, omega2, b)[0]
+
+    def wave_kernel_msinm(self, h, omega2, b):
+        if self.sincO is None:
+            self.wave_kernels(h, omega2, b)
+        self.work.add({self.rlanczos.V.shape[0]: 2})
+        return h * omega2 @ self.sincO.flatten()

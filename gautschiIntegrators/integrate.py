@@ -34,7 +34,7 @@ def solve_ivp(A, g, h: float, t_end: float, x0: np.array, v0: np.array, method: 
     solver = method(h, t_end, x0, v0, g, **options)
 
     t, x = None, None
-    ts = [0]
+    ts = []
     xs = []
     vs = []
     status = None
