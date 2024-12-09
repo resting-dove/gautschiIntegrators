@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 
-from gautschiIntegrators.lanczos.krylov_basis import arnoldi
+from .krylov_basis import arnoldi
 
 
 class ArnoldiProviderBase:
