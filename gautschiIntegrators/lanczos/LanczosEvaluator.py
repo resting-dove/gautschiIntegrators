@@ -1,9 +1,9 @@
 import numpy as np
 import scipy
 
-from gautschiIntegrators.base import WorkLog
-from gautschiIntegrators.lanczos.ArnoldiProvider import RestartedLanczosProvider
-from gautschiIntegrators.lanczos.LanczosProvider import LanczosProvider
+from ..base import WorkLog
+from .ArnoldiProvider import RestartedLanczosProvider, DenseRestartedLanczosProvider
+from .LanczosProvider import LanczosProvider
 from pywkm.wkm import wkm
 
 
@@ -146,7 +146,7 @@ class RestartedLanczosWkmEvaluator:
     def __init__(self, krylov_size, arnoldi_acc=1e-10, max_restarts=10):
         self.k = krylov_size
         self.arnoldi_acc = arnoldi_acc
-        self.rlanczos = RestartedLanczosProvider()
+        self.rlanczos = DenseRestartedLanczosProvider()
         self.n = 0
         self.m = 0
         self.max_restarts = max_restarts
@@ -206,3 +206,107 @@ class RestartedLanczosWkmEvaluator:
             self.wave_kernels(h, omega2, b)
         self.work.add({self.rlanczos.V.shape[0]: 2})
         return h * omega2 @ self.sincO.flatten()
+
+
+class RestartedLanczosDiagonalizationEvaluator:
+
+    def __init__(self, krylov_size, arnoldi_acc=1e-10, max_restarts=10):
+        self.k = krylov_size
+        self.arnoldi_acc = arnoldi_acc
+        self.rlanczos = DenseRestartedLanczosProvider()
+        self.n = 0
+        self.m = 0
+        self.max_restarts = max_restarts
+        self.beta = None
+        self.work = WorkLog()
+        self.sincO, self.cosO = None, None
+
+    def calculate_lanczos(self, h, omega2, b):
+        if self.beta is None:
+            self.beta = scipy.linalg.norm(b)
+        if self.beta == 0:
+            self.rlanczos.construct_zero(omega2.shape[0])
+        else:
+            self.m = self.rlanczos.construct(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
+            self.work.add({omega2.shape[0]: self.m})
+
+    def reset(self):
+        self.rlanczos.reset()
+        self.n = 0
+        self.m = 0
+        self.beta = None
+        ret = self.work.store
+        self.work = WorkLog()
+        self.sincO, self.cosO = None, None
+        return ret
+
+    def wave_kernels(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        cosT = self.calculate_fTe1(self.wave_kernel_c_scalar)
+        sincT = self.calculate_fTe1(self.wave_kernel_s_scalar)
+        self.n = cosT.shape[0]
+        self.work.add({self.rlanczos.V.shape[0]: 2})
+        self.cosO, self.sincO = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
+        print(
+            f"0: Update size {np.sum(self.sincO)} and maximum eval condition number {max(get_eigcond(self.rlanczos.T))}")
+        if self.beta != 0:
+            for k in range(1, self.max_restarts + 1):
+                self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
+                cosT = self.calculate_fTe1(self.wave_kernel_c_scalar)[-self.rlanczos.m:]
+                sincT = self.calculate_fTe1(self.wave_kernel_s_scalar)[-self.rlanczos.m:]
+                self.work.add({self.rlanczos.V.shape[0]: 2})
+                cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
+                print(f"{k}: Update size {np.sum(sUpdate)} and maximum eval condition number {max(get_eigcond(self.rlanczos.T))}")
+                self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate
+        return self.cosO.flatten(), self.sincO.flatten()
+
+    def wave_kernel_s(self, h, omega2, b):
+        if self.sincO is not None:
+            return self.sincO
+        else:
+            return self.wave_kernels(h, omega2, b)[1]
+
+    def wave_kernel_c(self, h, omega2, b):
+        if self.cosO is not None:
+            return self.cosO
+        else:
+            return self.wave_kernels(h, omega2, b)[0]
+
+    def wave_kernel_msinm(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        tsinT = self.calculate_fTe1(self.wave_kernel_xsin_scalar) / h
+        self.n = tsinT.shape[0]
+        self.work.add({self.rlanczos.V.shape[0]: 2})
+        self.OsinO = self.beta * self.rlanczos.V @ tsinT
+        if self.beta != 0:
+            for k in range(1, self.max_restarts + 1):
+                self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
+                tsinT = self.calculate_fTe1(self.wave_kernel_xsin_scalar) / h
+                self.work.add({self.rlanczos.V.shape[0]: 2})
+                OsUpdate = self.beta * self.rlanczos.V @ tsinT
+                self.OsinO = self.OsinO + OsUpdate
+        return self.OsinO.flatten()
+
+    def calculate_fTe1(self, f):
+        if self.beta != 0:
+            self.work.add({f"({self.m}, {self.m}) diagonalizations": self.rlanczos.diagonalize()})
+            self.work.add({self.m: 2})
+            return self.rlanczos.v @ (np.diag(f(self.rlanczos.w)) @ self.rlanczos.v.T[:, [0]]).flatten()
+        else:
+            return self.rlanczos.v[:, 0]
+
+    @staticmethod
+    def wave_kernel_c_scalar(w):
+        return np.real(np.cos(np.sqrt(w)))
+
+    @staticmethod
+    def wave_kernel_s_scalar(w):
+        return np.real(np.sinc(np.sqrt(w) / np.pi))
+
+    @staticmethod
+    def wave_kernel_xsin_scalar(w):
+        # Pay attention to the h!
+        return np.real(np.sqrt(w) * np.sin(np.sqrt(w)))
+def get_eigcond(A):
+    _, vl, vr = scipy.linalg.eig(A, left=True)
+    return np.reciprocal(np.sum(vl * vr, axis=0))

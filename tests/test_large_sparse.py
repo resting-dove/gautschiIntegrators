@@ -53,6 +53,7 @@ class QuintDiagonal(LargeIvp):
 
     def test_OneStepF_LanczosDiagonalization(self):
         self.gautschiEvaluation("OneStepF", LanczosDiagonalizationEvaluator(krylov_size=180))
+
     def test_OneStepF_RestartedLanczosWkm(self):
         self.gautschiEvaluation("OneStepF", RestartedLanczosWkmEvaluator(krylov_size=40, max_restarts=3))
 
