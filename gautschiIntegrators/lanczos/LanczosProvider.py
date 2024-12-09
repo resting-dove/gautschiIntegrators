@@ -1,8 +1,8 @@
 import numpy as np
 import scipy
 
-from gautschiIntegrators.lanczos.error_bounds import hochbruck_lubich
-from gautschiIntegrators.lanczos.krylov_basis import arnoldi, extend_arnoldi
+from .error_bounds import hochbruck_lubich
+from .krylov_basis import arnoldi, extend_arnoldi
 
 
 class LanczosProviderBase:
