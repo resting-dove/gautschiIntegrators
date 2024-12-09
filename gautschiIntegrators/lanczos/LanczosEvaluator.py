@@ -247,8 +247,6 @@ class RestartedLanczosDiagonalizationEvaluator:
         self.n = cosT.shape[0]
         self.work.add({self.rlanczos.V.shape[0]: 2})
         self.cosO, self.sincO = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
-        print(
-            f"0: Update size {np.sum(self.sincO)} and maximum eval condition number {max(get_eigcond(self.rlanczos.T))}")
         if self.beta != 0:
             for k in range(1, self.max_restarts + 1):
                 self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
@@ -256,7 +254,6 @@ class RestartedLanczosDiagonalizationEvaluator:
                 sincT = self.calculate_fTe1(self.wave_kernel_s_scalar)[-self.rlanczos.m:]
                 self.work.add({self.rlanczos.V.shape[0]: 2})
                 cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
-                print(f"{k}: Update size {np.sum(sUpdate)} and maximum eval condition number {max(get_eigcond(self.rlanczos.T))}")
                 self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate
         return self.cosO.flatten(), self.sincO.flatten()
 
