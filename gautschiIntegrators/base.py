@@ -61,6 +61,7 @@ class Solver:
             `self.status` is 'failed' after the step was taken or None
             otherwise.
         """
+        # TODO: Remove the explicit passing of omega2 in every call of the default step.
         if self.status != 'running':
             raise RuntimeError("Attempt to step on a failed or finished "
                                "solver.")
@@ -81,6 +82,23 @@ class Solver:
                     self.status = 'finished'
 
         return message
+
+    def service_step(self, omega2, x, v):
+        """Perform one integration step as a service.
+
+        This assumes being repeatedly called but the state is being kept outside of this class.
+        Mainly used in my thesis.
+        """
+        if self.status != 'running':
+            raise RuntimeError("Attempt to step on a failed or finished "
+                               "solver.")
+
+        self.x = x
+        self.v = v
+
+        success, message = self._step_impl(omega2)
+
+        return self.x, self.v
 
     def _step_impl(self, omega2):
         raise NotImplementedError

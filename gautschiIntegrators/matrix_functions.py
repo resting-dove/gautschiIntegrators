@@ -89,7 +89,8 @@ class SymDiagonalizationEvaluator(MatrixFunctionEvaluator):
         return self.v @ (self.msind @ r)
 
     def reset(self):
-        # self.w, self.v = None, None
+        self.w, self.v = None, None
+        self.cosd, self.sincd, self.msind = None, None, None
         work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations,
                 self.n: self.matvecs}
         self.diagonalizations, self.n, self.matvecs = 0, 0, 0
