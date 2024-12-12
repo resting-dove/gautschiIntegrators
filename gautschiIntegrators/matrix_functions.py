@@ -105,7 +105,7 @@ class TridiagDiagonalizationEvaluator(SymDiagonalizationEvaluator):
                 self.w = self.w + 0j
 
     def reset(self):
-        # self.w, self.v = None, None
+        self.w, self.v = None, None
         work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations,
                 self.n: self.matvecs}
         self.diagonalizations, self.n, self.matvecs = 0, 0, 0
@@ -210,7 +210,7 @@ class DenseWkmEvaluator(WkmEvaluator):
         return h * omega2 @ (self.S @ b)
 
     def reset(self):
-        # self.C, self.S = None, None
+        self.C, self.S = None, None
         ret = {f"({self.n}, {self.n}) wkms": self.wkms,
                self.n: self.matvecs}
         self.wkms = 0
