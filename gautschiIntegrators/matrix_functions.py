@@ -103,9 +103,12 @@ class TridiagDiagonalizationEvaluator(SymDiagonalizationEvaluator):
             self.w, self.v = scipy.linalg.eigh_tridiagonal(omega2.diagonal(0), omega2.diagonal(-1))
             if min(self.w) < 0:
                 self.w = self.w + 0j
+            self.diagonalizations += 1
+            self.n = omega2.shape[0]
 
     def reset(self):
         self.w, self.v = None, None
+        self.cosd, self.sincd, self.msind = None, None, None
         work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations,
                 self.n: self.matvecs}
         self.diagonalizations, self.n, self.matvecs = 0, 0, 0

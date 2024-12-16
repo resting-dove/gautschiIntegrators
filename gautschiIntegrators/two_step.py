@@ -49,7 +49,7 @@ class TwoStepIntegratorF(Solver):
             self.h -= overshoot
 
         g_x = self.curr_g_x
-        cosm = self.evaluator.wave_kernel_c(self.h, omega2, self.x)
+        cosm_xn = self.evaluator.wave_kernel_c(self.h, omega2, self.x)
         msinm_xn = self.evaluator.wave_kernel_msinm(self.h, omega2, self.x)
         self.work.add(self.evaluator.reset())
 
@@ -59,7 +59,7 @@ class TwoStepIntegratorF(Solver):
         cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
         self.work.add(self.evaluator.reset())
 
-        x_1 = 2 * cosm - self.prev_x + self.h ** 2 * sincm2_gn
+        x_1 = 2 * cosm_xn - self.prev_x + self.h ** 2 * sincm2_gn
 
         gn_1 = self.g(x_1)
         sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)

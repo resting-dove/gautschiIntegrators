@@ -3,7 +3,7 @@ import inspect
 import numpy as np
 
 from gautschiIntegrators.base import Solver
-from gautschiIntegrators.one_step import OneStepF, ExplicitEuler, OneStepGS99
+from gautschiIntegrators.one_step import OneStepF, ExplicitEuler, OneStepGS99, OneStep217
 from gautschiIntegrators.two_step import TwoStepIntegratorF, TwoStepIntegrator2_16
 
 METHODS = {
@@ -12,6 +12,7 @@ METHODS = {
     "TwoStep216": TwoStepIntegrator2_16,
     "ExplicitEuler": ExplicitEuler,
     "OneStepGS99": OneStepGS99,
+    "OneStep217": OneStep217,
 }
 
 MESSAGES = {0: "The solver successfully reached the end of the integration interval.",
