@@ -1,3 +1,14 @@
+"""
+A single frequency Fermi-Pasta-Ulam-Tsingou problem from
+Section XIII.2.1 Time Scales in the Fermi–Pasta–Ulam Problem in
+E. Hairer, G. Wanner, and C. Lubich, Geometric Numerical Integration, vol. 31. in Springer Series in Computational
+Mathematics, vol. 31. Berlin/Heidelberg: Springer-Verlag, 2006. doi: 10.1007/3-540-30666-8.
+
+This problem models the energy exchange between three stiff springs.
+
+This script contains code to plot the dynamics of the system across three time-scales and compare the trigonometric
+Gautschi-type integrators to the Scipy ODE solver for energy conservation and energy exchange between the springs.
+"""
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
@@ -45,6 +56,7 @@ def U(x):
     return ((ex[0, 1:] - ex[0, :-1] - ex[1, 1:] - ex[1, :-1]) ** 4).sum() / 4
 
 
+# A linear term g.
 # def U(x):
 #     assert x.shape[0] == 2
 #     n = x.size
@@ -202,7 +214,7 @@ def timescale3(y, x, omega, h=0.0025, method="TwoStepF"):
 if __name__ == "__main__":
     h = 0.0025
     omega = 50
-    q = np.random.normal(loc=0, scale=1, size=6)  # np.zeros(6)
+    q = np.random.normal(loc=0, scale=1, size=6)
     p = np.zeros_like(q)
     eq = np.pad(q, ((1, 1)), 'constant', constant_values=(0, 0))
     ep = np.pad(p, ((1, 1)), 'constant', constant_values=(0, 0))
@@ -217,14 +229,8 @@ if __name__ == "__main__":
     x[:, 0] = np.array([1, 1 / omega])
     y[:, 0] = np.array([1, 1])
 
-    # q = (x[0] - x[1]) / np.sqrt(2)
-    # p = (y[0] - y[1]) / np.sqrt(2)
-
     ex = np.pad(x, ((0, 0), (1, 1)), 'constant', constant_values=(0, 0))
 
-    # ((ex[0, 1:] - ex[0, :-1] - ex[1, 1:] - ex[1, :-1]) ** 4) / 4 == ((eq[1::2] - eq[:-1:2])**4).sum()
-    timescale1(y, x, omega, 0.00025, "OneStepF")
+    timescale1(y, x, omega, h, "OneStepF")
     # timescale2(y, x, omega, h*10)
     # timescale3(y, x, omega, 2 / omega, "OneStepF")
-
-    1 + 1
