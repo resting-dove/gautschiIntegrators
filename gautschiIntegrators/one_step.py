@@ -173,11 +173,11 @@ class OneStepGS99(Solver):
 
         sincm_x1 = self.evaluator.wave_kernel_s(self.h, omega2, x_1)
         self.work.add(self.evaluator.reset())
-        gn_1 = self.g(sincm_x1)
-        sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
+        g_sincm_x1 = self.g(sincm_x1)
+        sincm_g_sincm_x1 = self.evaluator.wave_kernel_s(self.h, omega2, g_sincm_x1)
         self.work.add(self.evaluator.reset())
 
-        v_1 = -1 * msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
+        v_1 = -1 * msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_g_sincm_x1)
 
         self.x, self.v = x_1, v_1
         self.iterations += 1
