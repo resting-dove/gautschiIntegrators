@@ -1,10 +1,13 @@
 import numpy as np
 import scipy
 
+from pywkm.EvalMatPolyPS import EvalMatPolyPS
+from pywkm.get_PadeOrder_Scaling import get_PadeOrder_Scaling
+from pywkm.get_WaveKernels_diag_Pade_coeffs import get_WaveKernels_diag_Pade_coeffs
 from ..base import WorkLog
 from .ArnoldiProvider import RestartedLanczosProvider, DenseRestartedLanczosProvider
 from .LanczosProvider import LanczosProvider
-from pywkm.wkm import wkm
+from pywkm.wkm import wkm, calculate_C_S_dense, calculate_C_dense
 
 
 class LanczosEvaluatorBase:
@@ -153,6 +156,8 @@ class RestartedLanczosWkmEvaluator:
         self.beta = None
         self.work = WorkLog()
         self.cosO, self.sincO = None, None
+        self.P, self.Q, self.dPxQ_PxdQ = None, None, None
+        self.wkm_m, self.wkm_s = None, None
 
     def calculate_lanczos(self, h, omega2, b):
         if self.beta is None:
@@ -171,7 +176,33 @@ class RestartedLanczosWkmEvaluator:
         ret = self.work.store
         self.work = WorkLog()
         self.cosO, self.sincO = None, None
+        # TODO: Check if this is valid or maybe introduce a whole new abstraction like reset and reset_new_b, where the
+        #  latter only causes changes for Lanczos based methods.
+        # self.P, self.Q, self.dPxQ_PxdQ = None, None, None
+        # self.wkm_m, self.wkm_s = None, None
         return ret
+
+    def wkm(self, A, return_sinhc=True):
+        if self.wkm_m is None:
+            self.wkm_m, self.wkm_s, As = get_PadeOrder_Scaling(A)
+            P, Q, dPxQ_PxdQ = get_WaveKernels_diag_Pade_coeffs(self.wkm_m)
+            self.P = np.array([1] + list(P))
+            self.Q = np.array([1] + list(Q))
+            self.dPxQ_PxdQ = np.array([1] + list(dPxQ_PxdQ.flatten()))
+            for ii in range(self.wkm_m - 1):
+                As[ii] = As[ii] / (4 ** ((ii + 1) * self.wkm_s))
+        else:
+            As = [A]
+            for ii in range(self.wkm_m - 1):
+                As.append(A @ As[-1])
+                As[ii] = As[ii] / (4 ** ((ii + 1) * self.wkm_s))
+            As[self.wkm_m - 1] = As[self.wkm_m - 1] / (4 ** ((self.wkm_m) * self.wkm_s))
+        pA = EvalMatPolyPS(self.P, As)
+        qA = EvalMatPolyPS(self.Q, As)
+        if return_sinhc:
+            return calculate_C_S_dense(As, self.dPxQ_PxdQ, qA, pA, self.wkm_s)
+        else:
+            return calculate_C_dense(As, qA, pA, self.wkm_s)
 
     def wave_kernels(self, h, omega2, b):
         self.calculate_lanczos(h, omega2, b)
@@ -206,6 +237,34 @@ class RestartedLanczosWkmEvaluator:
             self.wave_kernels(h, omega2, b)
         self.work.add({self.rlanczos.V.shape[0]: 2})
         return h * omega2 @ self.sincO.flatten()
+
+
+class AdaptiveRestartedLanczosWkmEvaluator(RestartedLanczosWkmEvaluator):
+    def wave_kernels(self, h, omega2, b):
+        self.calculate_lanczos(h, omega2, b)
+        C, S = self.wkm(-1 * self.rlanczos.T, return_sinhc=True)
+        self.n = C.shape[0]
+        self.work.add({f"({self.n}, {self.n}) wkms": 1})
+        cosT = C[:, [0]]
+        sincT = S[:, [0]]
+        self.work.add({self.rlanczos.V.shape[0]: 2})
+        self.cosO, self.sincO = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
+        stopping_criterion = False
+        k = 1
+        if self.beta != 0:
+            while k <= self.max_restarts and not stopping_criterion:
+                self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
+                C, S = self.wkm(-1 * self.rlanczos.T, return_sinhc=True)
+                self.work.add({f"({self.rlanczos.km}, {self.rlanczos.km}) wkms": 1})
+                cosT = C[-self.rlanczos.m:, [0]]
+                sincT = S[-self.rlanczos.m:, [0]]
+                self.work.add({self.rlanczos.V.shape[0]: 2})
+                cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
+                self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate
+                if scipy.linalg.norm(cUpdate) < self.arnoldi_acc and scipy.linalg.norm(sUpdate) < self.arnoldi_acc:
+                    stopping_criterion = True
+                k += 1
+        return self.cosO.flatten(), self.sincO.flatten()
 
 
 class RestartedLanczosDiagonalizationEvaluator:
@@ -304,6 +363,8 @@ class RestartedLanczosDiagonalizationEvaluator:
     def wave_kernel_xsin_scalar(w):
         # Pay attention to the h!
         return np.real(np.sqrt(w) * np.sin(np.sqrt(w)))
+
+
 def get_eigcond(A):
     _, vl, vr = scipy.linalg.eig(A, left=True)
     return np.reciprocal(np.sum(vl * vr, axis=0))

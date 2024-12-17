@@ -6,7 +6,7 @@ import scipy.sparse.linalg
 
 from gautschiIntegrators.integrate import solve_ivp
 from gautschiIntegrators.lanczos.LanczosEvaluator import LanczosDiagonalizationEvaluator, LanczosWkmEvaluator, \
-    RestartedLanczosWkmEvaluator
+    RestartedLanczosWkmEvaluator, AdaptiveRestartedLanczosWkmEvaluator
 from gautschiIntegrators.matrix_functions import DenseWkmEvaluator, WkmEvaluator
 from tests.test_solve_ivp import Ivp
 from tests.utils import compute_error
@@ -49,13 +49,15 @@ class QuintDiagonal(LargeIvp):
         self.A = scipy.sparse.block_diag([self.A, scipy.sparse.coo_array([[0, 0, 0], [0, 80, 0], [0, 0, 8]])],
                                          format='csr')
 
-        print("evals", min(np.linalg.eigvals(self.A.todense())), max(np.linalg.eigvals(self.A.todense())))
-
     def test_OneStepF_LanczosDiagonalization(self):
         self.gautschiEvaluation("OneStepF", LanczosDiagonalizationEvaluator(krylov_size=180))
 
     def test_OneStepF_RestartedLanczosWkm(self):
         self.gautschiEvaluation("OneStepF", RestartedLanczosWkmEvaluator(krylov_size=40, max_restarts=3))
+
+    def test_OneStepF_AdaptiveRestartedLanczosWkm(self):
+        self.gautschiEvaluation("OneStepF", AdaptiveRestartedLanczosWkmEvaluator(krylov_size=10, max_restarts=12,
+                                                                                 arnoldi_acc=1e-20))
 
     def test_OneStepF_LanczosWkm(self):
         self.gautschiEvaluation("OneStepF", LanczosWkmEvaluator(krylov_size=80))
