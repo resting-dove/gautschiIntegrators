@@ -59,7 +59,7 @@ def calcconstantsgautschi(res):
 
 
 def timescale1(y, x, evaluator, h=0.0025, method="TwoStepF", filename="fputmultifreqlanczos"):
-    t_end = 1000
+    t_end = 20000
     t_curr = 0
     Isums, Hs, Ks = [], [], []
     I11, I12 = [], []
@@ -114,6 +114,4 @@ if __name__ == "__main__":
     y = y / calcIyx(y, x)
 
     timescale1(y, x, TridiagDiagonalizationEvaluator(),
-               2 * eps, "OneStepGS99", filename=f"OneStepGS99")
-    timescale1(y, x, AdaptiveRestartedLanczosWkmEvaluator(krylov_size=4, max_restarts=10, arnoldi_acc=1e-20),
-               2 * eps, "OneStepGS99", filename=f"OneStepGS99_adaptive")
+               2 * eps, "OneStepGS99", filename=f"OneStepGS99Longer")
