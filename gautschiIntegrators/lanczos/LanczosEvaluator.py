@@ -30,11 +30,11 @@ class LanczosEvaluatorBase:
             self.work.add({omega2.shape[0]: self.m})
 
     def reset(self):
+        ret = self.work.store
         self.lanczos.reset()
         self.n = 0
         self.m = 0
         self.beta = None
-        ret = self.work.store
         self.work = WorkLog()
         return ret
 
@@ -132,13 +132,13 @@ class LanczosWkmEvaluator(LanczosEvaluatorBase):
         return self.beta * h * omega2 @ (self.lanczos.V @ sincT)
 
     def reset(self):
+        self.work.add({f"({self.n}, {self.n}) wkms": self.wkms})
+        ret = self.work.store
         self.lanczos.reset()
         self.n = 0
         self.m = 0
         self.beta = None
         self.C, self.S = None, None
-        self.work.add({f"({self.n}, {self.n}) wkms": self.wkms})
-        ret = self.work.store
         self.wkms = 0
         self.work = WorkLog()
         return ret
@@ -166,14 +166,14 @@ class RestartedLanczosWkmEvaluator:
             self.rlanczos.construct_zero(omega2.shape[0])
         else:
             self.m = self.rlanczos.construct(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
-            self.work.add({omega2.shape[0]: self.m})
+            self.work.add({omega2.shape[0]: self.rlanczos.km})  # Matvecs for the Lanczos basis
 
     def reset(self):
+        ret = self.work.store
         self.rlanczos.reset()
         self.n = 0
         self.m = 0
         self.beta = None
-        ret = self.work.store
         self.work = WorkLog()
         self.cosO, self.sincO = None, None
         # TODO: Check if this is valid or maybe introduce a whole new abstraction like reset and reset_new_b, where the
@@ -182,33 +182,11 @@ class RestartedLanczosWkmEvaluator:
         # self.wkm_m, self.wkm_s = None, None
         return ret
 
-    def wkm(self, A, return_sinhc=True):
-        if self.wkm_m is None:
-            self.wkm_m, self.wkm_s, As = get_PadeOrder_Scaling(A)
-            P, Q, dPxQ_PxdQ = get_WaveKernels_diag_Pade_coeffs(self.wkm_m)
-            self.P = np.array([1] + list(P))
-            self.Q = np.array([1] + list(Q))
-            self.dPxQ_PxdQ = np.array([1] + list(dPxQ_PxdQ.flatten()))
-            for ii in range(self.wkm_m - 1):
-                As[ii] = As[ii] / (4 ** ((ii + 1) * self.wkm_s))
-        else:
-            As = [A]
-            for ii in range(self.wkm_m - 1):
-                As.append(A @ As[-1])
-                As[ii] = As[ii] / (4 ** ((ii + 1) * self.wkm_s))
-            As[self.wkm_m - 1] = As[self.wkm_m - 1] / (4 ** ((self.wkm_m) * self.wkm_s))
-        pA = EvalMatPolyPS(self.P, As)
-        qA = EvalMatPolyPS(self.Q, As)
-        if return_sinhc:
-            return calculate_C_S_dense(As, self.dPxQ_PxdQ, qA, pA, self.wkm_s)
-        else:
-            return calculate_C_dense(As, qA, pA, self.wkm_s)
-
     def wave_kernels(self, h, omega2, b):
         self.calculate_lanczos(h, omega2, b)
         C, S = wkm(-1 * self.rlanczos.T, return_sinhc=True)
         self.n = C.shape[0]
-        self.work.add({f"({self.n}, {self.n}) wkms": 1})
+        self.work.add({f"{C.shape} wkms": 1})
         cosT = C[:, [0]]
         sincT = S[:, [0]]
         self.work.add({self.rlanczos.V.shape[0]: 2})
@@ -217,7 +195,7 @@ class RestartedLanczosWkmEvaluator:
             for k in range(1, self.max_restarts + 1):
                 self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
                 C, S = wkm(-1 * self.rlanczos.T, return_sinhc=True)
-                self.work.add({f"({self.rlanczos.km}, {self.rlanczos.km}) wkms": 1})
+                self.work.add({f"{C.shape} wkms": 1})
                 cosT = C[-self.rlanczos.m:, [0]]
                 sincT = S[-self.rlanczos.m:, [0]]
                 self.work.add({self.rlanczos.V.shape[0]: 2})
@@ -240,11 +218,32 @@ class RestartedLanczosWkmEvaluator:
 
 
 class AdaptiveRestartedLanczosWkmEvaluator(RestartedLanczosWkmEvaluator):
+    def wkm(self, A, return_sinhc=True):
+        if self.wkm_m is None:
+            self.wkm_m, self.wkm_s, As = get_PadeOrder_Scaling(A)
+            P, Q, dPxQ_PxdQ = get_WaveKernels_diag_Pade_coeffs(self.wkm_m)
+            self.P = np.array([1] + list(P))
+            self.Q = np.array([1] + list(Q))
+            self.dPxQ_PxdQ = np.array([1] + list(dPxQ_PxdQ.flatten()))
+            for ii in range(self.wkm_m - 1):
+                As[ii] = As[ii] / (4 ** ((ii + 1) * self.wkm_s))
+        else:
+            As = [A]
+            for ii in range(self.wkm_m - 1):
+                As.append(A @ As[-1])
+                As[ii] = As[ii] / (4 ** ((ii + 1) * self.wkm_s))
+            As[self.wkm_m - 1] = As[self.wkm_m - 1] / (4 ** ((self.wkm_m) * self.wkm_s))
+        pA = EvalMatPolyPS(self.P, As)
+        qA = EvalMatPolyPS(self.Q, As)
+        self.work.add({f"{A.shape} wkms": 1})
+        if return_sinhc:
+            return calculate_C_S_dense(As, self.dPxQ_PxdQ, qA, pA, self.wkm_s)
+        else:
+            return calculate_C_dense(As, qA, pA, self.wkm_s)
     def wave_kernels(self, h, omega2, b):
         self.calculate_lanczos(h, omega2, b)
         C, S = self.wkm(-1 * self.rlanczos.T, return_sinhc=True)
         self.n = C.shape[0]
-        self.work.add({f"({self.n}, {self.n}) wkms": 1})
         cosT = C[:, [0]]
         sincT = S[:, [0]]
         self.work.add({self.rlanczos.V.shape[0]: 2})
@@ -255,7 +254,6 @@ class AdaptiveRestartedLanczosWkmEvaluator(RestartedLanczosWkmEvaluator):
             while k <= self.max_restarts and not stopping_criterion:
                 self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
                 C, S = self.wkm(-1 * self.rlanczos.T, return_sinhc=True)
-                self.work.add({f"({self.rlanczos.km}, {self.rlanczos.km}) wkms": 1})
                 cosT = C[-self.rlanczos.m:, [0]]
                 sincT = S[-self.rlanczos.m:, [0]]
                 self.work.add({self.rlanczos.V.shape[0]: 2})
@@ -290,11 +288,11 @@ class RestartedLanczosDiagonalizationEvaluator:
             self.work.add({omega2.shape[0]: self.m})
 
     def reset(self):
+        ret = self.work.store
         self.rlanczos.reset()
         self.n = 0
         self.m = 0
         self.beta = None
-        ret = self.work.store
         self.work = WorkLog()
         self.sincO, self.cosO = None, None
         return ret

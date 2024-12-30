@@ -100,6 +100,9 @@ class Solver:
 
         return self.x, self.v
 
+    def clear_log(self):
+        self.work = WorkLog()
+
     def _step_impl(self, omega2):
         raise NotImplementedError
 
