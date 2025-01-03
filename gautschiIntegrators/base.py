@@ -4,6 +4,11 @@ import numpy as np
 
 
 class WorkLog:
+    """Keep track of the work having been performed.
+
+    This is mainly a dict, but with string representation and support for combining two instances.
+    """
+
     def __init__(self):
         self.store = defaultdict(lambda: 0)
 
