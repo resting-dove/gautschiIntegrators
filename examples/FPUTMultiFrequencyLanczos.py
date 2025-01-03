@@ -94,8 +94,8 @@ def timescale1(y, x, evaluator, h=0.0025, method="TwoStepF", filename="fputmulti
     plt.plot(np.linspace(0, t_end, len(Isqrt2)), Isqrt2, label=f"{(lambdas[-1]):.1f}w")
     plt.plot(np.linspace(0, t_end, len(Isqrt2s)), Isqrt2s, label="Isqrt2s")
 
-    plt.plot(np.linspace(0, t_end, len(I11)), I11, label=f"{(lambdas[-2]):.1f}w")
-    plt.plot(np.linspace(0, t_end, len(I12)), I12, label=f"{(lambdas[-1]):.1f}w")
+    plt.plot(np.linspace(0, t_end, len(I11)), I11, label=f"{(lambdas[1]):.1f}w")
+    plt.plot(np.linspace(0, t_end, len(I12)), I12, label=f"{(lambdas[2]):.1f}w")
 
     plt.plot(np.linspace(0, t_end, len(Hs[::10])), Hs[::10], label="H", linestyle=":")
     plt.plot(np.linspace(0, t_end, len(Ks[::10])), Ks[::10], label="K")
