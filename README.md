@@ -3,9 +3,9 @@
 A package for integrating oscillating second order differential equations
 $$x'' = -Ax + g(x).$$
 
-The integrators are described in [[1]](#first).
+The integrators are described in [[2]](#longTimeConservation).
 They make use of trigonometric functions to take advantage of known structure of the solution, as proposed
-by [[2]](#second), after whom this package is named.
+by [[4]](#gautschi), after whom this package is named.
 
 The matrix functions appearing in the integrators can be evaluated by symmetric diagonalization or by
 using [PyWkm](https://github.com/resting-dove/pyWKM), which is a private package at the moment.
@@ -34,19 +34,31 @@ This package does not use low-level methods from its dependencies, so I would ex
 and Scipy versions.
 `environment.yml` gives specifications for a Conda environment that this package has been used with.
 
+## Examples
+
+Gautschi-type integrators have usually been evaluated on test problems inspired by the Fermi-Pasta-Ulam-Tsingou experiment, e.g., in [[2]](#longTimeConservation).
+`[FermiPastaUlamTsingou.py](examples%2FFermiPastaUlamTsingou.py)` contains a single frequency example from Section XIII.2.1 of [[3]](#geometricIntegration).
+`[FPUTMultiFrequency.py](examples%2FFPUTMultiFrequency.py)` contains a multi frequency example from [[1]](#numericalConservation).
+`[FPUTMultiFrequencyLanczos.py](examples%2FFPUTMultiFrequencyLanczos.py)` is a variation of the former with longer vectors, so that the Lanczos method can be used to approximate the matrix functions.
+
 ## Notes
 
-The git branch titled `fermi-pasta-lanczos-experiment` contains a multi-frequency Fermi-Pasta-Ulam-Tsingou problem inspired
-by [[3]](#third).
+The git branch titled `fermi-pasta-lanczos-experiment` contains another multi-frequency Fermi-Pasta-Ulam-Tsingou problem inspired
+by [[1]](#numericalConservation) in `FPUTMultiFrequencyLanczosLonger.py`.
+It uses longer vectors, so that the Lanczos approximation can be used, but also simulates a longer time.
 
 ## References
 
-> <a id="first">[1]</a> E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory
-> Differential Equations,” *SIAM J. Numer. Anal.*, vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
-
-> <a id="second">[2]</a> W. Gautschi, “Numerical integration of ordinary differential equations based on trigonometric
-> polynomials,” *Numerische Mathematik*, vol. 3, no. 1, pp. 381–397, Dec. 1961, doi: 10.1007/BF01386037.
-
-> <a id="third">[3]</a> D. Cohen, E. Hairer, and Ch. Lubich, “Numerical Energy Conservation for Multi-Frequency
+> <a id="numericalConservation">[1]</a> D. Cohen, E. Hairer, and Ch. Lubich, “Numerical Energy Conservation for Multi-Frequency
 > Oscillatory Differential Equations,” *Bit Numer Math*, vol. 45, no. 2, pp. 287–305, Jun. 2005, doi:
 > 10.1007/s10543-005-7121-z.
+
+> <a id="longTimeConservation">[2]</a> E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory
+> Differential Equations,” *SIAM J. Numer. Anal.*, vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
+
+> <a id="geometrixIntegration">[3]</a> E. Hairer, G. Wanner, and C. Lubich, Geometric Numerical Integration, vol. 31. in Springer Series in Computational Mathematics, vol. 31. Berlin/Heidelberg: Springer-Verlag, 2006. doi: 10.1007/3-540-30666-8.
+
+> <a id="gautschi">[4]</a> W. Gautschi, “Numerical integration of ordinary differential equations based on trigonometric
+> polynomials,” *Numerische Mathematik*, vol. 3, no. 1, pp. 381–397, Dec. 1961, doi: 10.1007/BF01386037.
+
+
