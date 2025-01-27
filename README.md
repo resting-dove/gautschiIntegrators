@@ -37,9 +37,9 @@ and Scipy versions.
 ## Examples
 
 Gautschi-type integrators have usually been evaluated on test problems inspired by the Fermi-Pasta-Ulam-Tsingou experiment, e.g., in [[2]](#longTimeConservation).
-`[FermiPastaUlamTsingou.py](examples%2FFermiPastaUlamTsingou.py)` contains a single frequency example from Section XIII.2.1 of [[3]](#geometricIntegration).
-`[FPUTMultiFrequency.py](examples%2FFPUTMultiFrequency.py)` contains a multi frequency example from [[1]](#numericalConservation).
-`[FPUTMultiFrequencyLanczos.py](examples%2FFPUTMultiFrequencyLanczos.py)` is a variation of the former with longer vectors, so that the Lanczos method can be used to approximate the matrix functions.
+`FermiPastaUlamTsingou.py` contains a single frequency example from Section XIII.2.1 of [[3]](#geometricIntegration).
+`FPUTMultiFrequency.py` contains a multi frequency example from [[1]](#numericalConservation).
+`FPUTMultiFrequencyLanczos.py` is a variation of the former with longer vectors, so that the Lanczos method can be used to approximate the matrix functions.
 
 ## Notes
 
