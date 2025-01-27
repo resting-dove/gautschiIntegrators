@@ -43,9 +43,9 @@ Gautschi-type integrators have usually been evaluated on test problems inspired 
 
 ## Notes
 
-The git branch titled `fermi-pasta-lanczos-experiment` contains another multi-frequency Fermi-Pasta-Ulam-Tsingou problem inspired
+The git branch titled `fermi-pasta-lanczos-experiment` contains the multi-frequency Fermi-Pasta-Ulam-Tsingou problem inspired
 by [[1]](#numericalConservation) in `FPUTMultiFrequencyLanczosLonger.py`.
-It uses longer vectors, so that the Lanczos approximation can be used, but also simulates a longer time.
+It is similar to `FPUTMultiFrequencyLanczos.py`, but simulates a longer time.
 
 ## References
 
