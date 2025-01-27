@@ -8,7 +8,7 @@ They make use of trigonometric functions to take advantage of known structure of
 by [[2]](#second), after whom this package is named.
 
 The matrix functions appearing in the integrators can be evaluated by symmetric diagonalization or by
-using [PyWkm](https://github.com/resting-dove/pyWKM).
+using [PyWkm](https://github.com/resting-dove/pyWKM), which is a private package at the moment.
 Both of these methods can also be combined with the (restarted) Lanczos-method for evaluating matrix functions times a
 vector.
 
@@ -19,8 +19,12 @@ See `examples/` for example usage of the integrators for a Fermi-Pasta-Ulam-Tsin
 The central function is `solve_ivp` in `integrate.py`.
 It is modeled after the Scipy function of the same name, but has differing in- and outputs.
 
+See the `METHODS` dictionary in `integrate.py` for the available one- and two-step configurations of the gautschiIntegrators.
+
 The matrix functions are evaluated by an instance of the `MatrixFunctionEvaluator` base class.
-Subclasses implement for example use diagonalization of symmetric tri-diagonal matrices.
+Subclasses need to implement the calculation of $\cos(\sqrt(A))b$, $\sinc(\sqrt(A))b$ and $\sqrt(A)\sin(\sqrt(A))b$.
+This can be achieved for example by diagonalization of symmetric tri-diagonal matrices as in `TridiagDiagonalizationEvaluator`.
+
 
 ## Requirements
 
@@ -32,7 +36,7 @@ and Scipy versions.
 
 ## Notes
 
-The branch titled `fermi-pasta-lanczos-experiment` contains a multi-frequency Fermi-Pasta-Ulam-Tsingou problem inspired
+The git branch titled `fermi-pasta-lanczos-experiment` contains a multi-frequency Fermi-Pasta-Ulam-Tsingou problem inspired
 by [[3]](#third).
 
 ## References
