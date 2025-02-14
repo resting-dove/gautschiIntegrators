@@ -5,8 +5,12 @@ import scipy.sparse
 import scipy.sparse.linalg
 
 from gautschiIntegrators.integrate import solve_ivp
-from gautschiIntegrators.lanczos.LanczosEvaluator import LanczosDiagonalizationEvaluator, LanczosWkmEvaluator, \
-    RestartedLanczosWkmEvaluator, AdaptiveRestartedLanczosWkmEvaluator
+from gautschiIntegrators.lanczos.LanczosEvaluator import (
+    LanczosDiagonalizationEvaluator,
+    LanczosWkmEvaluator,
+    RestartedLanczosWkmEvaluator,
+    AdaptiveRestartedLanczosWkmEvaluator,
+)
 from gautschiIntegrators.matrix_functions import DenseWkmEvaluator, WkmEvaluator
 from tests.test_solve_ivp import Ivp
 from tests.utils import compute_error
@@ -46,8 +50,9 @@ class QuintDiagonal(LargeIvp):
         ood = (self.A.diagonal() * self.rng.random(len(d))) / 4
         ood = scipy.sparse.diags_array(ood[:-2], offsets=2, shape=self.A.shape)
         self.A = (self.A + od + od.T + ood + ood.T + scipy.sparse.eye_array(len(d)) * 10) / 300
-        self.A = scipy.sparse.block_diag([self.A, scipy.sparse.coo_array([[0, 0, 0], [0, 80, 0], [0, 0, 8]])],
-                                         format='csr')
+        self.A = scipy.sparse.block_diag(
+            [self.A, scipy.sparse.coo_array([[0, 0, 0], [0, 80, 0], [0, 0, 8]])], format="csr"
+        )
 
     def test_OneStepF_LanczosDiagonalization(self):
         self.gautschiEvaluation("OneStepF", LanczosDiagonalizationEvaluator(krylov_size=180))
@@ -56,8 +61,9 @@ class QuintDiagonal(LargeIvp):
         self.gautschiEvaluation("OneStepF", RestartedLanczosWkmEvaluator(krylov_size=40, max_restarts=3))
 
     def test_OneStepF_AdaptiveRestartedLanczosWkm(self):
-        self.gautschiEvaluation("OneStepF", AdaptiveRestartedLanczosWkmEvaluator(krylov_size=10, max_restarts=12,
-                                                                                 arnoldi_acc=1e-20))
+        self.gautschiEvaluation(
+            "OneStepF", AdaptiveRestartedLanczosWkmEvaluator(krylov_size=10, max_restarts=12, arnoldi_acc=1e-20)
+        )
 
     def test_OneStepF_LanczosWkm(self):
         self.gautschiEvaluation("OneStepF", LanczosWkmEvaluator(krylov_size=80))
@@ -88,5 +94,5 @@ class QuintDiagonal(LargeIvp):
             self.assertLess(e, 5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

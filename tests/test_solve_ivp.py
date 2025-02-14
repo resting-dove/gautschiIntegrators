@@ -5,8 +5,12 @@ import numpy as np
 import scipy.sparse
 
 from gautschiIntegrators.integrate import solve_ivp
-from gautschiIntegrators.matrix_functions import WkmEvaluator, SymDiagonalizationEvaluator, \
-    TridiagDiagonalizationEvaluator, DenseWkmEvaluator
+from gautschiIntegrators.matrix_functions import (
+    WkmEvaluator,
+    SymDiagonalizationEvaluator,
+    TridiagDiagonalizationEvaluator,
+    DenseWkmEvaluator,
+)
 from tests.utils import compute_error
 
 
@@ -40,10 +44,10 @@ class Ivp(unittest.TestCase):
         X = np.concatenate([self.x0, v0])
 
         def deriv(t, y):
-            return np.concatenate((y[self.n:], -1 * self.A @ y[:self.n] + g(y[:self.n])))
+            return np.concatenate((y[self.n :], -1 * self.A @ y[: self.n] + g(y[: self.n])))
 
         scipy_result = scipy.integrate.solve_ivp(deriv, [0, self.t_end], X)
-        return scipy_result["y"][:self.n, -1]
+        return scipy_result["y"][: self.n, -1]
 
     def get_g(self, x0):
         x0 = copy.deepcopy(x0)
@@ -55,22 +59,19 @@ class Ivp(unittest.TestCase):
 
     def gautschiEvaluation(self, methodName, evaluator=None):
         with self.subTest("Linear ODE"):
-            res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, None, methodName,
-                            evaluator=evaluator)
+            res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, None, methodName, evaluator=evaluator)
             self.assertTrue(np.isclose(res["t"], self.t_end))
             self.assertTrue(res["success"])
             e = compute_error(res["x"], self.x_true, self.rtol, self.atol)
-            self.assertLess(e , 5)
+            self.assertLess(e, 5)
 
         with self.subTest("Linear ODE with starting velocities"):
-            res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, self.v0, methodName,
-                            evaluator=evaluator)
+            res = solve_ivp(self.A, None, self.h, self.t_end, self.x0, self.v0, methodName, evaluator=evaluator)
             e = compute_error(res["x"], self.x_true2, self.rtol, self.atol)
-            self.assertLess(e , 5)
+            self.assertLess(e, 5)
 
         with self.subTest("Nonlinear Diff Eq"):
-            res = solve_ivp(self.A, self.g, self.h, self.t_end, self.x0, self.v0, methodName,
-                            evaluator=evaluator)
+            res = solve_ivp(self.A, self.g, self.h, self.t_end, self.x0, self.v0, methodName, evaluator=evaluator)
             e = compute_error(res["x"], self.x_true3, self.rtol, self.atol)
             self.assertLess(e, 5)
 
@@ -162,7 +163,7 @@ class SymmetricPositiveDefinite(Ivp):
     def get_matrix(self):
         L = np.tril(self.rng.uniform(50, 51, (self.n, self.n)))
         A = L @ L.T
-        self.A = scipy.sparse.csr_array(A / 50 ** 3)
+        self.A = scipy.sparse.csr_array(A / 50**3)
 
     def test_OneStepF_SymDiagonalization(self):
         self.gautschiEvaluation("OneStepF", SymDiagonalizationEvaluator())
@@ -202,5 +203,5 @@ class SymmetricPositiveDefinite(Ivp):
             self.assertLess(e, 5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

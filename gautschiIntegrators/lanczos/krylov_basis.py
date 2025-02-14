@@ -4,8 +4,7 @@ from typing import Union
 
 
 def arnoldi_step(A: Union[np.array, scipy.sparse.sparray], V: np.array, H: np.array, s: int, trunc=-1):
-    """Extend a given Arnoldi decomposition of dimension s by one step.
-    """
+    """Extend a given Arnoldi decomposition of dimension s by one step."""
     w = V[:, s]
     w = A.dot(w)
     sj = max(0, s - trunc)  # start orthogonalizing from this index
@@ -20,8 +19,9 @@ def arnoldi_step(A: Union[np.array, scipy.sparse.sparray], V: np.array, H: np.ar
     return w, V, H
 
 
-def extend_arnoldi(A: Union[np.array, scipy.sparse.sparray], V: np.array, w: np.array, H: np.array, s: int, m: int,
-                   trunc=-1):
+def extend_arnoldi(
+    A: Union[np.array, scipy.sparse.sparray], V: np.array, w: np.array, H: np.array, s: int, m: int, trunc=-1
+):
     """Extend a given Arnoldi decomposition from size s to size m."""
     if s >= m:
         return w, V, H, s
@@ -42,14 +42,13 @@ def extend_arnoldi(A: Union[np.array, scipy.sparse.sparray], V: np.array, w: np.
             new_V_big[:, k_small + 1] = w
         if breakdown:
             break
-    H = new_H[:m + 1, :m]
+    H = new_H[: m + 1, :m]
     new_V_big = new_V_big[:, :m]
     return w, new_V_big, H, breakdown
 
 
 def arnoldi(A, w: np.array, m: int, trunc=np.inf, eps=1e-10):
-    """Calculate an Arnoldi decomposition of dimension m.
-    """
+    """Calculate an Arnoldi decomposition of dimension m."""
     breakdown = False
     H = np.zeros((m + 1, m + 1), dtype=w.dtype)
     new_V_big = np.empty((w.shape[0], m), dtype=w.dtype)
@@ -66,6 +65,6 @@ def arnoldi(A, w: np.array, m: int, trunc=np.inf, eps=1e-10):
             new_V_big[:, k_small + 1] = w
         if breakdown:
             break
-    H = H[:m + 1, :m]
+    H = H[: m + 1, :m]
     new_V_big = new_V_big[:, :m]
     return w, new_V_big, H, breakdown

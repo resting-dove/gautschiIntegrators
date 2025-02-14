@@ -196,8 +196,8 @@ class RestartedLanczosWkmEvaluator:
                 self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
                 C, S = wkm(-1 * self.rlanczos.T, return_sinhc=True)
                 self.work.add({f"{C.shape} wkms": 1})
-                cosT = C[-self.rlanczos.m:, [0]]
-                sincT = S[-self.rlanczos.m:, [0]]
+                cosT = C[-self.rlanczos.m :, [0]]
+                sincT = S[-self.rlanczos.m :, [0]]
                 self.work.add({self.rlanczos.V.shape[0]: 2})
                 cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
                 self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate
@@ -240,6 +240,7 @@ class AdaptiveRestartedLanczosWkmEvaluator(RestartedLanczosWkmEvaluator):
             return calculate_C_S_dense(As, self.dPxQ_PxdQ, qA, pA, self.wkm_s)
         else:
             return calculate_C_dense(As, qA, pA, self.wkm_s)
+
     def wave_kernels(self, h, omega2, b):
         self.calculate_lanczos(h, omega2, b)
         C, S = self.wkm(-1 * self.rlanczos.T, return_sinhc=True)
@@ -254,8 +255,8 @@ class AdaptiveRestartedLanczosWkmEvaluator(RestartedLanczosWkmEvaluator):
             while k <= self.max_restarts and not stopping_criterion:
                 self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
                 C, S = self.wkm(-1 * self.rlanczos.T, return_sinhc=True)
-                cosT = C[-self.rlanczos.m:, [0]]
-                sincT = S[-self.rlanczos.m:, [0]]
+                cosT = C[-self.rlanczos.m :, [0]]
+                sincT = S[-self.rlanczos.m :, [0]]
                 self.work.add({self.rlanczos.V.shape[0]: 2})
                 cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
                 self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate
@@ -307,8 +308,8 @@ class RestartedLanczosDiagonalizationEvaluator:
         if self.beta != 0:
             for k in range(1, self.max_restarts + 1):
                 self.rlanczos.add_restart(h, omega2, b / self.beta, self.k, self.arnoldi_acc)
-                cosT = self.calculate_fTe1(self.wave_kernel_c_scalar)[-self.rlanczos.m:]
-                sincT = self.calculate_fTe1(self.wave_kernel_s_scalar)[-self.rlanczos.m:]
+                cosT = self.calculate_fTe1(self.wave_kernel_c_scalar)[-self.rlanczos.m :]
+                sincT = self.calculate_fTe1(self.wave_kernel_s_scalar)[-self.rlanczos.m :]
                 self.work.add({self.rlanczos.V.shape[0]: 2})
                 cUpdate, sUpdate = self.beta * self.rlanczos.V @ cosT, self.beta * self.rlanczos.V @ sincT
                 self.cosO, self.sincO = self.cosO + cUpdate, self.sincO + sUpdate

@@ -14,9 +14,17 @@ class TwoStepIntegratorF(Solver):
         Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
     """
 
-    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
-                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
-                 *args, **kwargs):
+    def __init__(
+        self,
+        h: float,
+        t_end: float,
+        x0: np.array,
+        v0: np.array,
+        g: callable,
+        evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
+        *args,
+        **kwargs,
+    ):
         super().__init__(h, t_end, x0, v0, g)
         self.prev_x = None
         self.prev_v = None
@@ -59,7 +67,7 @@ class TwoStepIntegratorF(Solver):
         cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
         self.work.add(self.evaluator.reset())
 
-        x_1 = 2 * cosm_xn - self.prev_x + self.h ** 2 * sincm2_gn
+        x_1 = 2 * cosm_xn - self.prev_x + self.h**2 * sincm2_gn
 
         gn_1 = self.g(x_1)
         sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
@@ -89,9 +97,17 @@ class TwoStepIntegrator2_16(Solver):
         Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
     """
 
-    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
-                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
-                 *args, **kwargs):
+    def __init__(
+        self,
+        h: float,
+        t_end: float,
+        x0: np.array,
+        v0: np.array,
+        g: callable,
+        evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
+        *args,
+        **kwargs,
+    ):
         super().__init__(h, t_end, x0, v0, g)
         self.prev_x = None
         self.prev_v = None
@@ -132,7 +148,7 @@ class TwoStepIntegrator2_16(Solver):
         sincm_g_minus_gsincm_xn = self.evaluator.wave_kernel_s(self.h, omega2, g_x - g_sincm_xn)
         self.work.add(self.evaluator.reset())
 
-        res = 2 * cosm_xn - self.prev_x + self.h ** 2 * (sincm2_gn + sincm_g_minus_gsincm_xn)
+        res = 2 * cosm_xn - self.prev_x + self.h**2 * (sincm2_gn + sincm_g_minus_gsincm_xn)
 
         self.prev_x = self.x
         self.x = res

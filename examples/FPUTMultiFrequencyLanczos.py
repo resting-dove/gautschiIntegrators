@@ -12,7 +12,7 @@ eps = 1 / omega
 lambdas = np.array([0] + [1] + list(np.linspace(1, 3, n - 4)) + [np.sqrt(2), 2 * np.sqrt(2)])
 omegas = lambdas / eps
 
-Omega2 = np.diag(omegas ** 2)
+Omega2 = np.diag(omegas**2)
 
 
 def calcHyx(y, x):
@@ -68,8 +68,7 @@ def timescale1(y, x, evaluator, h=0.0025, method="TwoStepF", filename="fputmulti
     while t_curr < t_end:
         print(t_curr)
         start = time.time()
-        res = solve_ivp(Omega2, dU, h, 200, xx.flatten(), yy.flatten(), method,
-                        evaluator=evaluator)
+        res = solve_ivp(Omega2, dU, h, 200, xx.flatten(), yy.flatten(), method, evaluator=evaluator)
         print(f"{len(res['ts'])} steps took {time.time() - start}")
         xx, yy = res["x"], res["v"]
         t_curr += res["t"]
@@ -81,12 +80,21 @@ def timescale1(y, x, evaluator, h=0.0025, method="TwoStepF", filename="fputmulti
         Isqrt2.extend(Is_[:, -2])
         I2sqrt2.extend(Is_[:, -1])
         Isums.extend(Is_.sum(-1))
-    plot_store = {"ts": res["ts"],
-                  "xs": res["xs"],
-                  "vs": res["vs"],
-                  "work": str(res["work"]),
-                  "Isums": Isums, "Hs": Hs, "Ks": Ks, "lambdas": lambdas, "eps": eps,
-                  "I11": I11, "I12": I12, "Isqrt2": Isqrt2, "I2sqrt2": I2sqrt2, }
+    plot_store = {
+        "ts": res["ts"],
+        "xs": res["xs"],
+        "vs": res["vs"],
+        "work": str(res["work"]),
+        "Isums": Isums,
+        "Hs": Hs,
+        "Ks": Ks,
+        "lambdas": lambdas,
+        "eps": eps,
+        "I11": I11,
+        "I12": I12,
+        "Isqrt2": Isqrt2,
+        "I2sqrt2": I2sqrt2,
+    }
     np.savez(filename, **plot_store)
     Isqrt2s = (1 / lambdas[-2] * np.array(Isqrt2)) + (2 / lambdas[-1] * np.array(I2sqrt2))
     plt.plot(np.linspace(0, t_end, len(Isums)), Isums, label="I")
@@ -99,7 +107,7 @@ def timescale1(y, x, evaluator, h=0.0025, method="TwoStepF", filename="fputmulti
 
     plt.plot(np.linspace(0, t_end, len(Hs[::10])), Hs[::10], label="H", linestyle=":")
     plt.plot(np.linspace(0, t_end, len(Ks[::10])), Ks[::10], label="K")
-    plt.legend(loc='center right')
+    plt.legend(loc="center right")
     plt.savefig(filename + ".png")
     plt.show()
 
@@ -113,7 +121,12 @@ if __name__ == "__main__":
 
     y = y / calcIyx(y, x)
 
-    timescale1(y, x, TridiagDiagonalizationEvaluator(),
-               2 * eps, "OneStepGS99", filename=f"OneStepGS99")
-    timescale1(y, x, AdaptiveRestartedLanczosWkmEvaluator(krylov_size=4, max_restarts=10, arnoldi_acc=1e-20),
-               2 * eps, "OneStepGS99", filename=f"OneStepGS99_adaptive")
+    timescale1(y, x, TridiagDiagonalizationEvaluator(), 2 * eps, "OneStepGS99", filename=f"OneStepGS99")
+    timescale1(
+        y,
+        x,
+        AdaptiveRestartedLanczosWkmEvaluator(krylov_size=4, max_restarts=10, arnoldi_acc=1e-20),
+        2 * eps,
+        "OneStepGS99",
+        filename=f"OneStepGS99_adaptive",
+    )

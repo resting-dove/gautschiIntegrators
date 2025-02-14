@@ -50,7 +50,7 @@ class Solver:
         self.g = g
 
         self.t = 0
-        self.status = 'running'
+        self.status = "running"
         self.n = self.x.size
 
         self.iterations = 0
@@ -67,24 +67,23 @@ class Solver:
             otherwise.
         """
         # TODO: Remove the explicit passing of omega2 in every call of the default step.
-        if self.status != 'running':
-            raise RuntimeError("Attempt to step on a failed or finished "
-                               "solver.")
+        if self.status != "running":
+            raise RuntimeError("Attempt to step on a failed or finished " "solver.")
 
         if self.n == 0 or self.t == self.t_end:
             # Handle corner cases of empty solver or no integration.
             self.t = self.t_end
             message = None
-            self.status = 'finished'
+            self.status = "finished"
         else:
 
             success, message = self._step_impl(omega2)
 
             if not success:
-                self.status = 'failed'
+                self.status = "failed"
             else:
                 if self.t >= self.t_end:
-                    self.status = 'finished'
+                    self.status = "finished"
 
         return message
 
@@ -94,9 +93,8 @@ class Solver:
         This assumes being repeatedly called but the state is being kept outside of this class.
         Mainly used in my thesis.
         """
-        if self.status != 'running':
-            raise RuntimeError("Attempt to step on a failed or finished "
-                               "solver.")
+        if self.status != "running":
+            raise RuntimeError("Attempt to step on a failed or finished " "solver.")
 
         self.x = x
         self.v = v

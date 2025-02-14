@@ -9,6 +9,7 @@ This problem models the energy exchange between three stiff springs.
 This script contains code to plot the dynamics of the system across three time-scales and compare the trigonometric
 Gautschi-type integrators to the Scipy ODE solver for energy conservation and energy exchange between the springs.
 """
+
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
@@ -27,7 +28,7 @@ def calcHpq(p, q, omega):
         term2 += (q[2 * i - 1] - q[2 * i - 2]) ** 2
         term3 += (q[2 * (i - 1)] - q[2 * (i - 1) - 1]) ** 4
     term3 += (1 - q[-1]) ** 4
-    return 1 / 2 * term1 + omega ** 2 / 4 * term2 + term3
+    return 1 / 2 * term1 + omega**2 / 4 * term2 + term3
 
 
 def calcHyx(y, x, omega):
@@ -37,7 +38,7 @@ def calcHyx(y, x, omega):
     for i in range(1, x.shape[1]):
         term1 += y[0, i - 1] ** 2 + y[1, i - 1] ** 2
         term2 += (x[1, i - 1]) ** 2
-    return 1 / 2 * term1 + omega ** 2 / 2 * term2 + U(x)
+    return 1 / 2 * term1 + omega**2 / 2 * term2 + U(x)
 
 
 def calcHmat(y, x, omega):
@@ -45,14 +46,14 @@ def calcHmat(y, x, omega):
     n = y.shape[1]
     term1 = 1 / 2 * np.dot(y.flatten(), y.flatten())
     Omega = np.zeros((x.size, x.size))
-    Omega[n:, n:] = omega ** 2 * np.eye(n)
+    Omega[n:, n:] = omega**2 * np.eye(n)
     term2 = 1 / 2 * x.flatten() @ Omega @ x.flatten()
     return term1 + term2 + U(x)
 
 
 def U(x):
     assert x.shape[0] == 2
-    ex = np.pad(x, ((0, 0), (1, 1)), 'constant', constant_values=(0, 0))
+    ex = np.pad(x, ((0, 0), (1, 1)), "constant", constant_values=(0, 0))
     return ((ex[0, 1:] - ex[0, :-1] - ex[1, 1:] - ex[1, :-1]) ** 4).sum() / 4
 
 
@@ -79,7 +80,7 @@ def dU(u):
         x = u.reshape((2, -1))
     else:
         x = u
-    ex = np.pad(x, ((0, 0), (1, 1)), 'constant', constant_values=(0, 0))
+    ex = np.pad(x, ((0, 0), (1, 1)), "constant", constant_values=(0, 0))
     term = (ex[0, 1:] - ex[0, :-1] - ex[1, 1:] - ex[1, :-1]) ** 3
     du = term[:-1] - term[1:]
     dv = -term[:-1] - term[1:]
@@ -91,7 +92,7 @@ def calcTs(y, x):
 
 
 def calcIxy(y, x, omega):
-    return 1 / 2 * (y[1, :] ** 2 + omega ** 2 * x[1, :] ** 2)
+    return 1 / 2 * (y[1, :] ** 2 + omega**2 * x[1, :] ** 2)
 
 
 def get_scipy_result(y, x, omega, t_end):
@@ -100,16 +101,18 @@ def get_scipy_result(y, x, omega, t_end):
     X = np.concatenate([x.flatten(), y.flatten()])
 
     Omega2 = np.zeros((x.size, x.size))
-    Omega2[m:, m:] = omega ** 2 * np.eye(m)
+    Omega2[m:, m:] = omega**2 * np.eye(m)
 
     def deriv(t, y):
-        return np.concatenate((y[n:], -1 * Omega2 @ y[:n]
-                               + dU(y[:n].reshape((2, -1)))
-                               ))
+        return np.concatenate((y[n:], -1 * Omega2 @ y[:n] + dU(y[:n].reshape((2, -1)))))
 
-    scipy_result = scipy.integrate.solve_ivp(deriv, [0, t_end], X,
-                                             # t_eval=np.linspace(0, t_end, 1000),
-                                             method='BDF')
+    scipy_result = scipy.integrate.solve_ivp(
+        deriv,
+        [0, t_end],
+        X,
+        # t_eval=np.linspace(0, t_end, 1000),
+        method="BDF",
+    )
     return scipy_result
 
 
@@ -147,9 +150,10 @@ def timescale1(y, x, omega, h=0.0025, method="TwoStepF"):
     plt.show()
     m = x.shape[1]
     Omega2 = np.zeros((x.size, x.size))
-    Omega2[m:, m:] = omega ** 2 * np.eye(m)
-    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method,
-                    evaluator=LanczosWkmEvaluator(krylov_size=2))
+    Omega2[m:, m:] = omega**2 * np.eye(m)
+    res = solve_ivp(
+        Omega2, dU, h, t_end, x.flatten(), y.flatten(), method, evaluator=LanczosWkmEvaluator(krylov_size=2)
+    )
     Is, Ts, Hs = calcconstantsgautschi(res)
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Is.sum(-1), label="I")
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Ts[:, 0], label="T0")
@@ -172,9 +176,8 @@ def timescale2(y, x, omega, h=0.0025, method="TwoStepF"):
 
     m = x.shape[1]
     Omega2 = np.zeros((x.size, x.size))
-    Omega2[m:, m:] = omega ** 2 * np.eye(m)
-    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method,
-                    evaluator=DenseWkmEvaluator())
+    Omega2[m:, m:] = omega**2 * np.eye(m)
+    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method, evaluator=DenseWkmEvaluator())
     Is, Ts, Hs = calcconstantsgautschi(res)
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Is.sum(-1), label="I")
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Ts[:, 0], label="T0")
@@ -198,9 +201,8 @@ def timescale3(y, x, omega, h=0.0025, method="TwoStepF"):
 
     m = x.shape[1]
     Omega2 = np.zeros((x.size, x.size))
-    Omega2[m:, m:] = omega ** 2 * np.eye(m)
-    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method,
-                    evaluator=DenseWkmEvaluator())
+    Omega2[m:, m:] = omega**2 * np.eye(m)
+    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method, evaluator=DenseWkmEvaluator())
     Is, Ts, Hs = calcconstantsgautschi(res)
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Is.sum(-1), label="I")
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Is[:, 0], label="I1")
@@ -216,20 +218,18 @@ if __name__ == "__main__":
     omega = 50
     q = np.random.normal(loc=0, scale=1, size=6)
     p = np.zeros_like(q)
-    eq = np.pad(q, ((1, 1)), 'constant', constant_values=(0, 0))
-    ep = np.pad(p, ((1, 1)), 'constant', constant_values=(0, 0))
+    eq = np.pad(q, ((1, 1)), "constant", constant_values=(0, 0))
+    ep = np.pad(p, ((1, 1)), "constant", constant_values=(0, 0))
 
-    x = np.array([(eq[2::2] + eq[1:-1:2]) / np.sqrt(2),
-                  (eq[2::2] - eq[1:-1:2]) / np.sqrt(2)])
-    y = np.array([(ep[2::2] + ep[1:-1:2]) / np.sqrt(2),
-                  (ep[2::2] - ep[1:-1:2]) / np.sqrt(2)])
+    x = np.array([(eq[2::2] + eq[1:-1:2]) / np.sqrt(2), (eq[2::2] - eq[1:-1:2]) / np.sqrt(2)])
+    y = np.array([(ep[2::2] + ep[1:-1:2]) / np.sqrt(2), (ep[2::2] - ep[1:-1:2]) / np.sqrt(2)])
 
     x = np.zeros_like(x)
     y = np.zeros_like(y)
     x[:, 0] = np.array([1, 1 / omega])
     y[:, 0] = np.array([1, 1])
 
-    ex = np.pad(x, ((0, 0), (1, 1)), 'constant', constant_values=(0, 0))
+    ex = np.pad(x, ((0, 0), (1, 1)), "constant", constant_values=(0, 0))
 
     timescale1(y, x, omega, h, "OneStepF")
     # timescale2(y, x, omega, h*10)

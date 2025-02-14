@@ -23,7 +23,7 @@ eps = 1 / omega
 lambdas = np.array([0, 1, 1, np.sqrt(2), 2])
 omegas = lambdas / eps
 
-Omega2 = np.diag(omegas ** 2)
+Omega2 = np.diag(omegas**2)
 
 
 def calcHyx(y, x):
@@ -64,13 +64,15 @@ def get_scipy_result(y, x, t_end):
     X = np.concatenate([x.flatten(), y.flatten()])
 
     def deriv(t, y):
-        return np.concatenate((y[n:], -1 * Omega2 @ y[:n]
-                               + dU(y[:n].reshape((1, -1)))
-                               ))
+        return np.concatenate((y[n:], -1 * Omega2 @ y[:n] + dU(y[:n].reshape((1, -1)))))
 
-    scipy_result = scipy.integrate.solve_ivp(deriv, [0, t_end], X,
-                                             # t_eval=np.linspace(0, t_end, 1000),
-                                             method='BDF')
+    scipy_result = scipy.integrate.solve_ivp(
+        deriv,
+        [0, t_end],
+        X,
+        # t_eval=np.linspace(0, t_end, 1000),
+        method="BDF",
+    )
     return scipy_result
 
 
@@ -114,8 +116,7 @@ def timescale1(y, x, h=0.0025, method="TwoStepF"):
     # plt.legend(loc='center right')
     # plt.show()
     m = x.shape[1]
-    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method,
-                    evaluator=TridiagDiagonalizationEvaluator())
+    res = solve_ivp(Omega2, dU, h, t_end, x.flatten(), y.flatten(), method, evaluator=TridiagDiagonalizationEvaluator())
     Is, Hs, Ks = calcconstantsgautschi(res)
     mu = np.array([0, 1, 1, 0, 2])
     I13 = np.nansum((mu * Is / lambdas), axis=1)
@@ -127,7 +128,7 @@ def timescale1(y, x, h=0.0025, method="TwoStepF"):
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Is.sum(-1), label="I")
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Hs, label="H", linestyle=":")
     plt.plot(np.linspace(0, t_end, Is.shape[0]), Ks, label="K", linestyle=":")
-    plt.legend(loc='center right')
+    plt.legend(loc="center right")
     plt.show()
 
 

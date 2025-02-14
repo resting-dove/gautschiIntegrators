@@ -24,7 +24,7 @@ class ExplicitEuler(Solver):
         mat = scipy.sparse.block_array([[None, scipy.sparse.eye_array(*self.v.shape)], [-1 * omega2, None]])
         G = np.concatenate([np.zeros_like(self.x), self.g(self.x)])
         next_X = X + self.h * (mat @ X + G)
-        self.x, self.v = next_X[:len(self.x)], next_X[len(self.x):]
+        self.x, self.v = next_X[: len(self.x)], next_X[len(self.x) :]
         self.iterations += 1
         self.work[2 * self.n] += 1
         return True, None
@@ -32,16 +32,24 @@ class ExplicitEuler(Solver):
 
 class OneStepF(Solver):
     """
-       One-step trigonometric integrator for second order differential equations of the form
-           x'' = - \Omega^2 @ x + g(x).
+    One-step trigonometric integrator for second order differential equations of the form
+        x'' = - \Omega^2 @ x + g(x).
 
-       Source: Eq. (2.2) and configuration F of Table 1 of
-           E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory Differential
-           Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
-       """
+    Source: Eq. (2.2) and configuration F of Table 1 of
+        E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory Differential
+        Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
+    """
 
-    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
-                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(), **kwargs):
+    def __init__(
+        self,
+        h: float,
+        t_end: float,
+        x0: np.array,
+        v0: np.array,
+        g: callable,
+        evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
+        **kwargs,
+    ):
         super().__init__(h, t_end, x0, v0, g)
         self.evaluator = evaluator
 
@@ -66,13 +74,13 @@ class OneStepF(Solver):
         cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
         self.work.add(self.evaluator.reset())
 
-        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h ** 2 * (sincm2_gn)
+        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h**2 * (sincm2_gn)
 
         gn_1 = self.g(x_1)
         sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
         self.work.add(self.evaluator.reset())
 
-        v_1 = - msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
+        v_1 = -msinm_xn + cosm_vn + 0.5 * self.h * (cosm_sincm_gn + sincm_gn1)
 
         self.x, self.v = x_1, v_1
         self.iterations += 1
@@ -81,22 +89,30 @@ class OneStepF(Solver):
 
 class OneStepGS99(Solver):
     """
-       One-step trigonometric integrator for second order differential equations of the form
-           x'' = - \Omega^2 @ x + g(x).
+    One-step trigonometric integrator for second order differential equations of the form
+        x'' = - \Omega^2 @ x + g(x).
 
-       Source:
-            Originally proposed by
-                B. García-Archilla, J. M. Sanz-Serna, and R. D. Skeel, “Long-Time-Step Methods for Oscillatory
-                Differential Equations,” SIAM J. Sci. Comput., vol. 20, no. 3, pp. 930–963, Oct. 1998,
-                doi: 10.1137/S1064827596313851.
-            Also found in Eq. (2.2) and configuration E of Table 1 of
-                E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory
-                Differential Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000,
-                doi: 10.1137/S0036142999353594.
-       """
+    Source:
+         Originally proposed by
+             B. García-Archilla, J. M. Sanz-Serna, and R. D. Skeel, “Long-Time-Step Methods for Oscillatory
+             Differential Equations,” SIAM J. Sci. Comput., vol. 20, no. 3, pp. 930–963, Oct. 1998,
+             doi: 10.1137/S1064827596313851.
+         Also found in Eq. (2.2) and configuration E of Table 1 of
+             E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory
+             Differential Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000,
+             doi: 10.1137/S0036142999353594.
+    """
 
-    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
-                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(), **kwargs):
+    def __init__(
+        self,
+        h: float,
+        t_end: float,
+        x0: np.array,
+        v0: np.array,
+        g: callable,
+        evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
+        **kwargs,
+    ):
         super().__init__(h, t_end, x0, v0, g)
         self.evaluator = evaluator
 
@@ -122,7 +138,7 @@ class OneStepGS99(Solver):
         cosm_sincm_gn, sincm2_gn = self.evaluator.wave_kernels(self.h, omega2, sincm_gn)
         self.work.add(self.evaluator.reset())
 
-        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h ** 2 * (sincm2_gn)
+        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h**2 * (sincm2_gn)
 
         sincm_x1 = self.evaluator.wave_kernel_s(self.h, omega2, x_1)
         self.work.add(self.evaluator.reset())
@@ -139,16 +155,24 @@ class OneStepGS99(Solver):
 
 class OneStep217(Solver):
     """
-       One-step trigonometric integrator for second order differential equations of the form
-           x'' = - \Omega^2 @ x + g(x).
+    One-step trigonometric integrator for second order differential equations of the form
+        x'' = - \Omega^2 @ x + g(x).
 
-       Source: Eq. (2.17) of
-           E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory Differential
-           Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
-       """
+    Source: Eq. (2.17) of
+        E. Hairer and C. Lubich, “Long-Time Energy Conservation of Numerical Methods for Oscillatory Differential
+        Equations,” SIAM J. Numer. Anal., vol. 38, no. 2, pp. 414–441, Jul. 2000, doi: 10.1137/S0036142999353594.
+    """
 
-    def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable,
-                 evaluator: MatrixFunctionEvaluator = WkmEvaluator(), **kwargs):
+    def __init__(
+        self,
+        h: float,
+        t_end: float,
+        x0: np.array,
+        v0: np.array,
+        g: callable,
+        evaluator: MatrixFunctionEvaluator = WkmEvaluator(),
+        **kwargs,
+    ):
         super().__init__(h, t_end, x0, v0, g)
         self.evaluator = evaluator
 
@@ -175,7 +199,7 @@ class OneStep217(Solver):
         cosm_gntilde, sincm_gntilde = self.evaluator.wave_kernels(self.h, omega2, gntilde)
         self.work.add(self.evaluator.reset())
 
-        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h ** 2 * sincm_gntilde
+        x_1 = cosm_xn + self.h * sincm_vn + 0.5 * self.h**2 * sincm_gntilde
 
         gn_1 = self.g(x_1)
         sincm_gn1 = self.evaluator.wave_kernel_s(self.h, omega2, gn_1)
@@ -186,7 +210,7 @@ class OneStep217(Solver):
         g_sincm_x_1 = self.g(sincm_x_1)
         g_1tilde = gn_1 + sincm_gn1 - g_sincm_x_1
 
-        v_1 = - msinm_xn + cosm_vn + 0.5 * self.h * (cosm_gntilde + g_1tilde)
+        v_1 = -msinm_xn + cosm_vn + 0.5 * self.h * (cosm_gntilde + g_1tilde)
 
         self.x, self.v = x_1, v_1
         self.iterations += 1

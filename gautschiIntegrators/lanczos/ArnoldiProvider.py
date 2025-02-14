@@ -45,8 +45,7 @@ class RestartedLanczosProvider(ArnoldiProviderBase):
 
     def _construct(self, h, omega2, b, krylov_size, arnoldi_acc):
         current_size = 0
-        (v_next, V, H, breakdown) = arnoldi(A=h ** 2 * omega2, w=b, m=krylov_size, trunc=1,
-                                            eps=arnoldi_acc)
+        (v_next, V, H, breakdown) = arnoldi(A=h**2 * omega2, w=b, m=krylov_size, trunc=1, eps=arnoldi_acc)
         if breakdown:
             print("Breakdown")
             stopping_criterion = True
@@ -63,15 +62,15 @@ class RestartedLanczosProvider(ArnoldiProviderBase):
         self.km = current_size
 
     def add_restart(self, h, omega2, b, krylov_size, arnoldi_acc):
-        (v_next, V, H, breakdown) = arnoldi(A=h ** 2 * omega2, w=self.v_next, m=krylov_size, trunc=1,
-                                            eps=arnoldi_acc)
+        (v_next, V, H, breakdown) = arnoldi(A=h**2 * omega2, w=self.v_next, m=krylov_size, trunc=1, eps=arnoldi_acc)
         if breakdown:
             print("Breakdown")
             m = breakdown
         else:
             m = krylov_size
-        self.T = scipy.sparse.block_array(([self.T, None], [self.subdiag_array, scipy.sparse.csc_array(H[:m, :m])]),
-                                          format="csc")
+        self.T = scipy.sparse.block_array(
+            ([self.T, None], [self.subdiag_array, scipy.sparse.csc_array(H[:m, :m])]), format="csc"
+        )
         eta = H[m, m - 1]
         self.subdiag_array = fill_block_in_top_right(eta, rows=m, cols=self.T.shape[1])
         self.km += m
@@ -100,8 +99,7 @@ class DenseRestartedLanczosProvider(RestartedLanczosProvider):
 
     def _construct(self, h, omega2, b, krylov_size, arnoldi_acc):
         current_size = 0
-        (v_next, V, H, breakdown) = arnoldi(A=h ** 2 * omega2, w=b, m=krylov_size, trunc=1,
-                                            eps=arnoldi_acc)
+        (v_next, V, H, breakdown) = arnoldi(A=h**2 * omega2, w=b, m=krylov_size, trunc=1, eps=arnoldi_acc)
         if breakdown:
             print("Breakdown")
             stopping_criterion = True
@@ -118,15 +116,15 @@ class DenseRestartedLanczosProvider(RestartedLanczosProvider):
         self.km = current_size
 
     def add_restart(self, h, omega2, b, krylov_size, arnoldi_acc):
-        (v_next, V, H, breakdown) = arnoldi(A=h ** 2 * omega2, w=self.v_next, m=krylov_size, trunc=1,
-                                            eps=arnoldi_acc)
+        (v_next, V, H, breakdown) = arnoldi(A=h**2 * omega2, w=self.v_next, m=krylov_size, trunc=1, eps=arnoldi_acc)
         if breakdown:
             print("Breakdown")
             m = breakdown
         else:
             m = krylov_size
-        self.T = scipy.sparse.block_array(([self.T, None], [self.subdiag_array, scipy.sparse.csc_array(H[:m, :m])]),
-                                          format="csc").todense()
+        self.T = scipy.sparse.block_array(
+            ([self.T, None], [self.subdiag_array, scipy.sparse.csc_array(H[:m, :m])]), format="csc"
+        ).todense()
         eta = H[m, m - 1]
         self.subdiag_array = fill_block_in_top_right(eta, rows=m, cols=self.T.shape[1])
         self.km += m

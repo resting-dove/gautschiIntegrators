@@ -93,8 +93,7 @@ class SymDiagonalizationEvaluator(MatrixFunctionEvaluator):
     def reset(self):
         self.w, self.v = None, None
         self.cosd, self.sincd, self.msind = None, None, None
-        work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations,
-                self.n: self.matvecs}
+        work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations, self.n: self.matvecs}
         self.diagonalizations, self.n, self.matvecs = 0, 0, 0
         return work
 
@@ -113,8 +112,7 @@ class TridiagDiagonalizationEvaluator(SymDiagonalizationEvaluator):
     def reset(self):
         self.w, self.v = None, None
         self.cosd, self.sincd, self.msind = None, None, None
-        work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations,
-                self.n: self.matvecs}
+        work = {f"({self.n}, {self.n}) diagonalizations": self.diagonalizations, self.n: self.matvecs}
         self.diagonalizations, self.n, self.matvecs = 0, 0, 0
         return work
 
@@ -134,7 +132,7 @@ class WkmEvaluator(MatrixFunctionEvaluator):
 
     def wave_kernels(self, h, omega2, b):
         if self.S is None or self.h != h:
-            self.C, self.S = wkm(-1 * h ** 2 * omega2, return_sinhc=True)
+            self.C, self.S = wkm(-1 * h**2 * omega2, return_sinhc=True)
             self.wkms += 1
             self.n = self.C.shape[0]
             self.h = h
@@ -142,7 +140,7 @@ class WkmEvaluator(MatrixFunctionEvaluator):
 
     def wave_kernel_s(self, h, omega2, b):
         if self.S is None or self.h != h:
-            self.C, self.S = wkm(-1 * h ** 2 * omega2, return_sinhc=True)
+            self.C, self.S = wkm(-1 * h**2 * omega2, return_sinhc=True)
             self.wkms += 1
             self.n = self.C.shape[0]
             self.h = h
@@ -150,7 +148,7 @@ class WkmEvaluator(MatrixFunctionEvaluator):
 
     def wave_kernel_c(self, h, omega2, b):
         if self.C is None or self.h != h:
-            self.C = wkm(-1 * h ** 2 * omega2, return_sinhc=False)
+            self.C = wkm(-1 * h**2 * omega2, return_sinhc=False)
             self.wkms += 1
             self.n = self.C.shape[0]
             self.h = h
@@ -158,7 +156,7 @@ class WkmEvaluator(MatrixFunctionEvaluator):
 
     def wave_kernel_msinm(self, h, omega2, b):
         if self.S is None or self.h != h:
-            self.C, self.S = wkm(-1 * h ** 2 * omega2, return_sinhc=True)
+            self.C, self.S = wkm(-1 * h**2 * omega2, return_sinhc=True)
             self.wkms += 1
             self.n = self.C.shape[0]
             self.h = h
@@ -167,8 +165,10 @@ class WkmEvaluator(MatrixFunctionEvaluator):
 
     def reset(self):
         self.C, self.S = None, None
-        ret = {f"({self.n}, {self.n}) wkms": self.wkms,  # TODO: Add this information to be returned by PyWKM
-               self.n: self.matvecs}
+        ret = {
+            f"({self.n}, {self.n}) wkms": self.wkms,  # TODO: Add this information to be returned by PyWKM
+            self.n: self.matvecs,
+        }
         self.wkms = 0
         self.matvecs = 0
         return ret
@@ -190,7 +190,7 @@ class DenseWkmEvaluator(WkmEvaluator):
 
     def wave_kernels(self, h, omega2, b):
         if self.S is None or h != self.h:
-            self.C, self.S = wkm(-1 * h ** 2 * self.densify(omega2), return_sinhc=True)
+            self.C, self.S = wkm(-1 * h**2 * self.densify(omega2), return_sinhc=True)
             self.h = h
         self.wkms += 1
         self.n = self.C.shape[0]
@@ -198,7 +198,7 @@ class DenseWkmEvaluator(WkmEvaluator):
 
     def wave_kernel_s(self, h, omega2, b):
         if self.S is None or h != self.h:
-            self.C, self.S = wkm(-1 * h ** 2 * self.densify(omega2), return_sinhc=True)
+            self.C, self.S = wkm(-1 * h**2 * self.densify(omega2), return_sinhc=True)
             self.h = h
         self.wkms += 1
         self.n = self.C.shape[0]
@@ -206,7 +206,7 @@ class DenseWkmEvaluator(WkmEvaluator):
 
     def wave_kernel_c(self, h, omega2, b):
         if self.C is None or h != self.h:
-            self.C = wkm(-1 * h ** 2 * self.densify(omega2), return_sinhc=False)
+            self.C = wkm(-1 * h**2 * self.densify(omega2), return_sinhc=False)
             self.h = h
         self.wkms += 1
         self.n = self.C.shape[0]
@@ -214,7 +214,7 @@ class DenseWkmEvaluator(WkmEvaluator):
 
     def wave_kernel_msinm(self, h, omega2, b):
         if self.S is None or h != self.h:
-            self.C, self.S = wkm(-1 * h ** 2 * self.densify(omega2), return_sinhc=True)
+            self.C, self.S = wkm(-1 * h**2 * self.densify(omega2), return_sinhc=True)
             self.wkms += 1
             self.n = self.C.shape[0]
             self.h = h
@@ -223,8 +223,7 @@ class DenseWkmEvaluator(WkmEvaluator):
 
     def reset(self):
         self.C, self.S = None, None
-        ret = {f"({self.n}, {self.n}) wkms": self.wkms,
-               self.n: self.matvecs}
+        ret = {f"({self.n}, {self.n}) wkms": self.wkms, self.n: self.matvecs}
         self.wkms = 0
         self.matvecs = 0
         return ret

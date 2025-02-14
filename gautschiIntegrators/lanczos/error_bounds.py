@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def hochbruck_lubich(sm_ev: float, t: float, k_max: int, desired_acc: float):
     """
     A priori error bound for the Arnoldi approximation of exp(tA),
@@ -16,7 +17,7 @@ def hochbruck_lubich(sm_ev: float, t: float, k_max: int, desired_acc: float):
     out = np.empty_like(ms) * np.nan
     out = np.where(ms >= 2 * rho * t, 10 / (rho * t) / np.exp(rho * t) * (np.exp(1) * rho * t / ms) ** ms, out)
     indices = (2 * rho * t >= ms) * (ms >= np.sqrt(4 * rho * t))
-    out = np.where(indices, 10 / np.exp(ms ** 2 / (5 * rho * t)), out)
+    out = np.where(indices, 10 / np.exp(ms**2 / (5 * rho * t)), out)
     if out[-1] < desired_acc:
         k = np.argmax(out < desired_acc)
     else:
