@@ -13,7 +13,7 @@ class ExplicitEuler(Solver):
     def __init__(self, h: float, t_end: float, x0: np.array, v0: np.array, g: callable, *args, **kwargs):
         super().__init__(h, t_end, x0, v0, g)
 
-    def _step_impl(self, omega2: scipy.sparse.sparray) -> (np.array, np.array):
+    def _step_impl(self, omega2: scipy.sparse.sparray) -> (bool, None):
         self.t += self.h
         if self.t >= self.t_end:
             overshoot = self.t - self.t_end
@@ -45,7 +45,7 @@ class OneStepF(Solver):
         super().__init__(h, t_end, x0, v0, g)
         self.evaluator = evaluator
 
-    def _step_impl(self, omega2: scipy.sparse.sparray):
+    def _step_impl(self, omega2: scipy.sparse.sparray) -> (bool, None):
         self.t += self.h
         if self.t >= self.t_end:
             overshoot = self.t - self.t_end
@@ -100,7 +100,7 @@ class OneStepGS99(Solver):
         super().__init__(h, t_end, x0, v0, g)
         self.evaluator = evaluator
 
-    def _step_impl(self, omega2: scipy.sparse.sparray):
+    def _step_impl(self, omega2: scipy.sparse.sparray) -> (bool, None):
         self.t += self.h
         if self.t >= self.t_end:
             overshoot = self.t - self.t_end
@@ -152,7 +152,7 @@ class OneStep217(Solver):
         super().__init__(h, t_end, x0, v0, g)
         self.evaluator = evaluator
 
-    def _step_impl(self, omega2: scipy.sparse.sparray):
+    def _step_impl(self, omega2: scipy.sparse.sparray) -> (bool, None):
         self.t += self.h
         if self.t >= self.t_end:
             overshoot = self.t - self.t_end

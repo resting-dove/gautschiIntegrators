@@ -23,6 +23,8 @@ class MatrixFunctionEvaluator:
 
 
 class SymDiagonalizationEvaluator(MatrixFunctionEvaluator):
+    """Symmetric diagonalization-based evaluation of matrix functions."""
+
     def __init__(self):
         self.w, self.v = None, None
         self.diagonalizations = 0
@@ -98,6 +100,8 @@ class SymDiagonalizationEvaluator(MatrixFunctionEvaluator):
 
 
 class TridiagDiagonalizationEvaluator(SymDiagonalizationEvaluator):
+    """Diagonalization-based evaluation of matrix functions, assuming the matrix is symmetric tridiagonal."""
+
     def diagonalize(self, omega2: scipy.sparse.csr_array):
         if self.w is None:
             self.w, self.v = scipy.linalg.eigh_tridiagonal(omega2.diagonal(0), omega2.diagonal(-1))
@@ -116,6 +120,11 @@ class TridiagDiagonalizationEvaluator(SymDiagonalizationEvaluator):
 
 
 class WkmEvaluator(MatrixFunctionEvaluator):
+    """Evaluation of matrix functions using the evaluation of the Wave-Kernel matrix functions.
+
+    The Wave-Kernel matrix functions are evaluated using the PyWKM package, which is not currently publicly available.
+    """
+
     def __init__(self):
         self.C, self.S = None, None
         self.wkms = 0

@@ -19,7 +19,7 @@ MESSAGES = {0: "The solver successfully reached the end of the integration inter
             1: "A termination event occurred."}
 
 
-def solve_ivp(A, g, h: float, t_end: float, x0: np.array, v0: np.array, method: str, **options):
+def solve_ivp(A, g, h: float, t_end: float, x0: np.array, v0: np.array, method: str, **options) -> dict:
     """Solve an initial value problem given by a second order differential equations of the form
            x'' = -A^2 @ x + g(x).
 

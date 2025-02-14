@@ -24,7 +24,7 @@ class TwoStepIntegratorF(Solver):
         self.curr_g_x = None
         self.evaluator = evaluator
 
-    def first_step_impl(self, omega2: scipy.sparse.spmatrix):
+    def first_step_impl(self, omega2: scipy.sparse.spmatrix) -> (bool, None):
         if self.h > self.t_end:
             self.h = self.t_end
         x, v, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
@@ -39,7 +39,7 @@ class TwoStepIntegratorF(Solver):
         self.curr_g_x = self.g(self.x)
         return True, None
 
-    def _step_impl(self, omega2: scipy.sparse.sparray):
+    def _step_impl(self, omega2: scipy.sparse.sparray) -> (bool, None):
         if self.t == 0:
             return self.first_step_impl(omega2)
         self.t += self.h
@@ -97,7 +97,7 @@ class TwoStepIntegrator2_16(Solver):
         self.prev_v = None
         self.evaluator = evaluator
 
-    def first_step_impl(self, omega2: scipy.sparse.spmatrix):
+    def first_step_impl(self, omega2: scipy.sparse.spmatrix) -> (bool, None):
         if self.h > self.t_end:
             self.h = self.t_end
         x, v, n_matvecs = get_scipy_result(omega2, np.concatenate([self.x, self.v]), self.g, self.h)
@@ -110,7 +110,7 @@ class TwoStepIntegrator2_16(Solver):
         self.work[self.n] += n_matvecs
         return True, None
 
-    def _step_impl(self, omega2: scipy.sparse.sparray):
+    def _step_impl(self, omega2: scipy.sparse.sparray) -> (bool, None):
         if self.t == 0:
             return self.first_step_impl(omega2)
         self.t += self.h
@@ -140,7 +140,7 @@ class TwoStepIntegrator2_16(Solver):
         return True, None
 
 
-def get_scipy_result(A, X, g, t_end):
+def get_scipy_result(A, X, g, t_end) -> (np.array, np.array, int):
     # TODO: Replace this with a one step method
     n = A.shape[0]
 

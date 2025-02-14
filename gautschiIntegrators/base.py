@@ -88,7 +88,7 @@ class Solver:
 
         return message
 
-    def service_step(self, omega2, x, v):
+    def service_step(self, omega2, x, v) -> (np.array, np.array):
         """Perform one integration step as a service.
 
         This assumes being repeatedly called but the state is being kept outside of this class.
@@ -108,7 +108,7 @@ class Solver:
     def clear_log(self):
         self.work = WorkLog()
 
-    def _step_impl(self, omega2):
+    def _step_impl(self, omega2) -> (bool, None):
         raise NotImplementedError
 
 
