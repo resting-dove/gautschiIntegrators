@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.sparse
-from pywkm.wkm import wkm
+from pywkm import wkm
 
 
 class MatrixFunctionEvaluator:

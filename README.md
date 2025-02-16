@@ -28,7 +28,9 @@ This can be achieved for example by diagonalization of symmetric tri-diagonal ma
 
 ## Requirements
 
-The code of PyWkm needs to be copied into a folder `pywkm` for usage in this repository.
+The code requires the PyWkm package to be installed.
+This is a private package at the moment.
+In subsequent versions, I will make this dependency optional.
 
 This package does not use low-level methods from its dependencies, so I would expect it to work with any current Numpy
 and Scipy versions.
