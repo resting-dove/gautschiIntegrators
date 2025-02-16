@@ -41,11 +41,10 @@ class LanczosProvider(LanczosProviderBase):
     def _construct(self, h, omega2, b, k, arnoldi_acc):
         (w, V, T, breakdown) = arnoldi(A=h**2 * omega2, w=b, m=k, trunc=1, eps=arnoldi_acc)
         if breakdown:
-            stopping_criterion = True
             m = breakdown
         else:
             m = k
-        eta = T[m, m - 1]
+        # eta = T[m, m - 1]
         self.T = T[:m, :m]
         self.V = V
         self.m = m
@@ -70,11 +69,10 @@ class AdaptiveLanczosProviderHL(LanczosProvider):
         else:
             (w, V, T, breakdown) = arnoldi(A=h**2 * omega2, w=b, m=k, trunc=1, eps=arnoldi_acc)
         if breakdown:
-            stopping_criterion = True
             self.m = breakdown
         else:
             self.m = k
         print(f"m={self.m}")
-        eta = T[self.m, self.m - 1]
+        # eta = T[self.m, self.m - 1]
         self.T = T[: self.m, : self.m]
         self.V = V

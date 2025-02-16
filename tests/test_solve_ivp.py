@@ -16,7 +16,7 @@ from tests.utils import compute_error
 
 class Ivp(unittest.TestCase):
     def get_matrix(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def setUp(self):
         self.rng = np.random.default_rng(44)
@@ -40,7 +40,7 @@ class Ivp(unittest.TestCase):
         if v0 is None:
             v0 = 0 * self.x0
         if g is None:
-            g = lambda x: 0
+            g = lambda x: 0  # noqa: E731
         X = np.concatenate([self.x0, v0])
 
         def deriv(t, y):

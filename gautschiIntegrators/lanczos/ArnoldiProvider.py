@@ -48,7 +48,6 @@ class RestartedLanczosProvider(ArnoldiProviderBase):
         (v_next, V, H, breakdown) = arnoldi(A=h**2 * omega2, w=b, m=krylov_size, trunc=1, eps=arnoldi_acc)
         if breakdown:
             print("Breakdown")
-            stopping_criterion = True
             m = breakdown
         else:
             m = krylov_size
@@ -102,7 +101,6 @@ class DenseRestartedLanczosProvider(RestartedLanczosProvider):
         (v_next, V, H, breakdown) = arnoldi(A=h**2 * omega2, w=b, m=krylov_size, trunc=1, eps=arnoldi_acc)
         if breakdown:
             print("Breakdown")
-            stopping_criterion = True
             m = breakdown
         else:
             m = krylov_size

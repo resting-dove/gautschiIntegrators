@@ -6,20 +6,20 @@ from pywkm.wkm import wkm
 class MatrixFunctionEvaluator:
 
     def wave_kernels(self, h, omega2, b):
-        raise NotImplemented
+        raise NotImplementedError
 
     def wave_kernel_s(self, h, omega2, b):
-        raise NotImplemented
+        raise NotImplementedError
 
     def wave_kernel_c(self, h, omega2, b):
-        raise NotImplemented
+        raise NotImplementedError
 
     def wave_kernel_msinm(self, h, omega2, b):
-        raise NotImplemented
+        raise NotImplementedError
 
     def reset(self) -> int:
         """Return information about the work having been done."""
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class SymDiagonalizationEvaluator(MatrixFunctionEvaluator):

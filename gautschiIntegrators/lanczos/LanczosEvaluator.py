@@ -5,7 +5,7 @@ from pywkm.EvalMatPolyPS import EvalMatPolyPS
 from pywkm.get_PadeOrder_Scaling import get_PadeOrder_Scaling
 from pywkm.get_WaveKernels_diag_Pade_coeffs import get_WaveKernels_diag_Pade_coeffs
 from ..base import WorkLog
-from .ArnoldiProvider import RestartedLanczosProvider, DenseRestartedLanczosProvider
+from .ArnoldiProvider import DenseRestartedLanczosProvider
 from .LanczosProvider import LanczosProvider
 from pywkm.wkm import wkm, calculate_C_S_dense, calculate_C_dense
 
